@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#102152">
+<meta name="referrer" content="no-referrer">
+<title>مدرسهٔ من | ورود به سامانه</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231a3a8f'/%3E%3Cpath d='M16 14h30a4 4 0 0 1 4 4v28a4 4 0 0 1-4 4H16z' fill='%23fbfcff'/%3E%3Cpath d='M24 14v36' stroke='%23e0566c' stroke-width='3'/%3E%3C/svg%3E">
+<noscript><style>#boot{display:none}</style></noscript>
+<style>
+:root{
+  --ink:#1a3a8f; --ink-press:#132d73; --desk:#102152;
+  --paper:#fbfcff; --rule:#dde7f7; --margin:#e4506a;
+  --text:#1c2540; --muted:#56607f; --edge:#8ea3d3;
+  --err:#b3261e; --err-bg:#fdeceb; --info-bg:#eaf0fc;
+  --step:34px;
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html{background:var(--desk);-webkit-text-size-adjust:100%}
+body{
+  margin:0;min-height:100vh;min-height:100dvh;display:flex;justify-content:center;
+  background:var(--desk);color:var(--text);line-height:1.8;
+  font-family:Vazirmatn,Tahoma,"Segoe UI",Arial,sans-serif;
+}
+
+/* The page is a ruled school notebook sheet; the red margin sits on the right (RTL). */
+.sheet{
+  position:relative;width:100%;max-width:30rem;min-height:100vh;min-height:100dvh;
+  display:flex;flex-direction:column;justify-content:center;overflow:hidden;
+  background-color:var(--paper);
+  background-image:repeating-linear-gradient(to bottom,transparent 0,transparent calc(var(--step) - 1px),var(--rule) calc(var(--step) - 1px),var(--rule) var(--step));
+  padding:28px 20px 28px 22px;padding-right:60px;
+}
+@supports (padding:max(1px,2px)){
+  .sheet{padding-top:max(28px,env(safe-area-inset-top));padding-bottom:max(28px,env(safe-area-inset-bottom))}
+}
+.sheet::before{
+  content:"";position:absolute;top:0;bottom:0;right:30px;width:4px;
+  border-left:2px solid var(--margin);border-right:2px solid var(--margin);
+  transform-origin:top;animation:draw .9s .1s ease-out both;
+}
+@keyframes draw{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+
+h1{margin:0 0 4px;font-size:2.25rem;line-height:1.4;font-weight:800;color:var(--ink)}
+.lead{margin:0 0 26px;max-width:24rem;font-size:1rem;color:var(--muted)}
+.boot{margin:0;color:var(--muted)}
+
+.field{margin-bottom:18px}
+label{display:block;margin:0 0 6px;font-size:.95rem;font-weight:700}
+input{
+  width:100%;height:52px;padding:0 14px;border:1.5px solid var(--edge);border-radius:8px;
+  background:#fff;color:var(--text);font:inherit;font-size:1.05rem;direction:ltr;text-align:right;
+}
+input:focus{outline:3px solid rgba(26,58,143,.28);outline-offset:1px;border-color:var(--ink)}
+.pw{position:relative}
+.pw input{padding-left:88px}
+.reveal{
+  position:absolute;left:6px;top:6px;height:40px;padding:0 12px;border:0;border-radius:6px;
+  background:transparent;color:var(--ink);font:inherit;font-size:.9rem;font-weight:700;cursor:pointer;
+}
+.reveal:hover{background:var(--info-bg)}
+.reveal:focus-visible{outline:3px solid rgba(26,58,143,.28)}
+
+.msg{margin:0 0 14px;font-size:.95rem;line-height:1.8}
+.msg:empty{margin:0}
+.msg[data-kind]{padding:10px 12px;border-radius:8px}
+.msg[data-kind="err"]{background:var(--err-bg);color:var(--err)}
+.msg[data-kind="info"]{background:var(--info-bg);color:var(--ink)}
+
+.go{
+  width:100%;height:54px;border:0;border-radius:8px;background:var(--ink);color:#fff;
+  font:inherit;font-size:1.1rem;font-weight:800;cursor:pointer;transition:background .15s;
+}
+.go:hover{background:var(--ink-press)}
+.go:active{transform:translateY(1px)}
+.go:focus-visible{outline:3px solid rgba(26,58,143,.35);outline-offset:3px}
+.go[disabled]{opacity:.75;cursor:progress}
+.spin{
+  display:none;width:1em;height:1em;margin-right:.55em;vertical-align:-.15em;border-radius:50%;
+  border:2.5px solid rgba(255,255,255,.45);border-top-color:#fff;animation:spin .7s linear infinite;
+}
+.go.busy .spin{display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.linkbtn{
+  display:block;margin:14px 0 0;padding:6px 0;border:0;background:none;color:var(--ink);
+  font:inherit;font-size:.95rem;font-weight:700;text-decoration:underline;cursor:pointer;
+}
+.help{margin:22px 0 0;font-size:.9rem;line-height:1.9;color:var(--muted)}
+
+@media (min-width:34rem){
+  body{align-items:center;padding:40px 16px}
+  .sheet{min-height:0;border-radius:10px;box-shadow:0 30px 70px rgba(0,0,0,.4);padding:56px 36px 56px 30px;padding-right:80px}
+  .sheet::before{right:44px}
+}
+@media (prefers-reduced-motion:reduce){
+  .sheet::before{animation:none}
+  .spin{animation-duration:1.6s}
+}
+</style>
+<style id="student-theme-bridge">
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap');
+:root{--bg:#eef6f6;--surface:#fff;--surface2:#f5fafa;--ink:#233638;--muted:#667c7e;--line:#e6efef;--teal:#08b9b8;--primary:#08b9b8;--shadow:0 10px 30px rgba(35,80,82,.08);color-scheme:light}
+html,body{font-family:'Vazirmatn',Tahoma,Arial,sans-serif!important}
+body{background:var(--bg)!important;color:var(--ink)!important}
+.topbar,.top,.topbar .top-title{background:linear-gradient(120deg,#08b9b8,#079b9b)!important;color:#fff!important;border-color:rgba(255,255,255,.25)!important;box-shadow:0 8px 24px rgba(8,140,140,.13)}
+.sidebar,aside{background:rgba(255,255,255,.92)!important;color:var(--ink)!important;border-color:var(--line)!important;box-shadow:0 8px 28px rgba(35,80,82,.04)}
+main,.content,.wrap,.layout{color:var(--ink)}
+.card,.panel,.school,.login,.tile,.stat,.stats,.summary,.credentials,.calendar-card,.table-wrap,.tablewrap,.page-head,.form-grid,.circular-item,.schedule-row,.notice,.tile-list,.cards>*,.grid-3>*{background:var(--surface)!important;color:var(--ink)!important;border:1px solid var(--line)!important;border-radius:20px!important;box-shadow:var(--shadow)!important}
+.title,.page-title,.top-title,.brand,.heading,.card-title{font-family:'Vazirmatn',Tahoma,Arial,sans-serif!important;color:var(--ink)}
+.desc,.page-desc,.page-description,.muted,.subbrand,.cmeta,.small{color:var(--muted)!important}
+button,.btn,.primary-btn,.primary,.secondary,.secondary-btn,.menu-btn,.nav button,.logout,.smallbtn{font-family:'Vazirmatn',Tahoma,Arial,sans-serif!important;transition:transform .18s ease,box-shadow .18s ease,background .18s ease!important;border-radius:13px!important}
+.primary-btn,.primary,.btn:not(.outline),.menu-btn.active,.nav button.active{background:var(--teal)!important;color:#fff!important;border-color:var(--teal)!important}
+.secondary,.secondary-btn,.outline{background:#fff!important;color:#078d8d!important;border:1px solid #bde9e7!important}
+.menu-btn,.nav button{color:#43676b!important}
+.menu-btn:hover,.nav button:hover{background:#e3f8f7!important;color:#078d8d!important;transform:translateY(-1px)}
+button:hover,.btn:hover,.primary-btn:hover,.secondary-btn:hover,.tile:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(8,140,140,.12)!important}
+input,select,textarea{font-family:'Vazirmatn',Tahoma,Arial,sans-serif!important;background:#fbfefe!important;color:var(--ink)!important;border:1px solid #dbe8e8!important;border-radius:12px!important;outline-color:var(--teal)!important}
+input:focus,select:focus,textarea:focus{border-color:var(--teal)!important;box-shadow:0 0 0 3px rgba(8,185,184,.12)!important}
+table{border-color:var(--line)!important}th{background:#f1f9f9!important;color:#456366!important}td,th{border-color:var(--line)!important}tr:hover td{background:#f7fcfc!important}
+.badge,.chip,.pill{border-radius:999px!important}
+.message,.msg{border-radius:14px!important}
+@keyframes studentSoftIn{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+.card,.panel,.school,.login,.tile,.stat,.summary,.calendar-card,.table-wrap,.tablewrap{animation:studentSoftIn .35s ease both}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+</style>
+<style id="madrese-delight-layer">
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap');
+:root{--delight-ink:#173b43;--delight-muted:#6b858b;--delight-teal:#08b9b8;--delight-teal-dark:#087f87;--delight-line:rgba(38,115,123,.13);--delight-shadow:0 18px 55px rgba(19,78,87,.10);--delight-glow:0 12px 34px rgba(8,185,184,.18)}
+html{scroll-behavior:smooth} body{font-family:'Vazirmatn',Tahoma,Arial,sans-serif!important;color:var(--delight-ink)}
+body:before{content:"";position:fixed;inset:-18%;z-index:-2;pointer-events:none;background:radial-gradient(ellipse at 12% 18%,rgba(8,185,184,.13),transparent 34%),radial-gradient(ellipse at 86% 12%,rgba(100,128,255,.10),transparent 31%),radial-gradient(ellipse at 76% 88%,rgba(255,190,112,.12),transparent 32%);animation:delightAurora 18s ease-in-out infinite alternate}
+body:after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.18;background-image:radial-gradient(rgba(28,111,120,.20) .7px,transparent .7px);background-size:19px 19px;mask-image:linear-gradient(to bottom,black,transparent 90%)}
+@keyframes delightAurora{0%{transform:translate3d(-1%,0,0) rotate(0deg) scale(1)}100%{transform:translate3d(1.5%,1%,0) rotate(2deg) scale(1.04)}}
+@keyframes delightRise{from{opacity:0;transform:translateY(18px) scale(.985);filter:blur(3px)}to{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}}
+@keyframes delightFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes delightShimmer{0%{background-position:0% 50%}100%{background-position:200% 50%}}
+@keyframes delightPulse{0%,100%{box-shadow:0 0 0 0 rgba(8,185,184,.0)}50%{box-shadow:0 0 0 5px rgba(8,185,184,.07)}}
+header,.top,.topbar{position:relative;isolation:isolate}
+.top,.topbar{background:linear-gradient(115deg,#087f87 0%,#08b9b8 48%,#50d5c5 100%)!important;background-size:200% 200%!important;animation:delightShimmer 13s ease infinite!important;color:#fff!important;box-shadow:0 12px 35px rgba(8,127,135,.20)!important;border-color:rgba(255,255,255,.22)!important}
+.top:after,.topbar:after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.23;background:linear-gradient(110deg,transparent 20%,rgba(255,255,255,.34) 45%,transparent 62%);background-size:220% 100%;animation:delightShimmer 9s linear infinite}
+.sidebar,aside{backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.card,.panel,.tile,.stat,.stats,.summary,.calendar-card,.table-wrap,.tablewrap,.school,.login,.sheet,.page-head,.credentials,.notice,.form-grid{transition:transform .28s cubic-bezier(.2,.8,.2,1),box-shadow .28s ease,border-color .28s ease!important;animation:delightRise .65s cubic-bezier(.2,.75,.25,1) both}
+.card:nth-child(2),.tile:nth-child(2),.stat:nth-child(2){animation-delay:.05s}.card:nth-child(3),.tile:nth-child(3),.stat:nth-child(3){animation-delay:.10s}.card:nth-child(4),.tile:nth-child(4),.stat:nth-child(4){animation-delay:.15s}.card:nth-child(5),.tile:nth-child(5){animation-delay:.20s}
+.card:hover,.panel:hover,.tile:hover,.stat:hover,.summary:hover,.calendar-card:hover,.school:hover,.login:hover{transform:translateY(-4px)!important;box-shadow:0 24px 55px rgba(19,78,87,.14),0 0 0 1px rgba(8,185,184,.08)!important;border-color:rgba(8,185,184,.28)!important}
+button,.btn,a.btn,.primary-btn,.secondary-btn,.go,.menu-btn,.nav button{font-family:'Vazirmatn',Tahoma,Arial,sans-serif!important;transition:transform .2s ease,box-shadow .2s ease,filter .2s ease!important}
+button:hover,.btn:hover,.primary-btn:hover,.secondary-btn:hover,.go:hover{filter:saturate(1.08);transform:translateY(-2px)}
+button:active,.btn:active,.primary-btn:active,.go:active{transform:translateY(0) scale(.985)}
+.primary-btn,.primary,.go,.btn:not(.outline):not(.secondary),button[type=submit]{box-shadow:0 8px 19px rgba(8,160,160,.16)}
+input,select,textarea{transition:border-color .2s ease,box-shadow .2s ease,background .2s ease!important}
+input:focus,select:focus,textarea:focus{box-shadow:0 0 0 4px rgba(8,185,184,.12)!important}
+table{border-collapse:separate!important;border-spacing:0;overflow:hidden;border-radius:14px}thead th:first-child{border-top-right-radius:12px}thead th:last-child{border-top-left-radius:12px}tbody tr{transition:background .18s ease,transform .18s ease}tbody tr:hover{transform:scale(1.002)}
+.page-title,.title,h1,h2{letter-spacing:-.025em}
+.badge,.chip,.pill{box-shadow:inset 0 0 0 1px rgba(8,185,184,.08)}
+/* Landing page: a calm, luminous glass login card */
+.sheet{position:relative;overflow:hidden;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);background:rgba(255,255,255,.84)!important;border:1px solid rgba(255,255,255,.9)!important;border-radius:28px!important;box-shadow:0 28px 90px rgba(24,91,98,.16),0 0 0 1px rgba(8,185,184,.05)!important}
+.sheet:before{content:"";position:absolute;top:0;right:0;left:0;height:5px;background:linear-gradient(90deg,#087f87,#08b9b8,#a4ead9,#8b9eff,#087f87);background-size:250% 100%;animation:delightShimmer 8s linear infinite}
+.sheet h1{background:linear-gradient(110deg,#087f87,#08b9b8,#5d8ee8);background-clip:text;-webkit-background-clip:text;color:transparent!important}
+.sheet .go{position:relative;overflow:hidden}
+.sheet .go:after{content:"";position:absolute;inset:-20% auto -20% -45%;width:35%;transform:skewX(-22deg);background:linear-gradient(90deg,transparent,rgba(255,255,255,.42),transparent);transition:left .65s ease}
+.sheet .go:hover:after{left:120%}
+/* Student dashboard refinements */
+#appView .tile{will-change:transform;animation:delightRise .55s cubic-bezier(.2,.75,.25,1) both;animation-delay:calc(var(--i,0)*45ms)}
+.tile-ico{transition:transform .28s cubic-bezier(.2,.8,.2,1),filter .28s ease!important}
+.tile:hover .tile-ico{transform:translateY(-3px) rotate(-4deg) scale(1.06)!important;filter:drop-shadow(0 6px 8px rgba(8,150,150,.15))}
+#appView .card{box-shadow:0 12px 32px rgba(22,78,87,.07)}
+::selection{background:rgba(8,185,184,.22);color:#124b50}
+@media(max-width:700px){.card,.panel,.tile,.stat,.school,.login,.sheet{border-radius:17px!important}.top,.topbar{box-shadow:0 8px 22px rgba(8,127,135,.16)!important}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<main class="sheet">
+  <header>
+    <h1>مدرسهٔ من</h1>
+    <p class="lead">با نام کاربری و رمز عبوری که مدرسه به شما داده است وارد شوید.</p>
+  </header>
+
+  <p id="boot" class="boot" role="status">در حال بررسی ورود…</p>
+  <noscript><p class="msg" data-kind="err">برای ورود باید جاوااسکریپت مرورگر فعال باشد.</p></noscript>
+
+  <form id="loginForm" novalidate hidden>
+    <div class="field">
+      <label for="username">نام کاربری</label>
+      <input id="username" name="username" type="text" inputmode="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="next">
+    </div>
+    <div class="field">
+      <label for="password">رمز عبور</label>
+      <div class="pw">
+        <input id="password" name="password" type="password" autocomplete="current-password" enterkeyhint="go">
+        <button type="button" id="reveal" class="reveal" aria-controls="password" aria-pressed="false" aria-label="نمایش رمز عبور">نمایش</button>
+      </div>
+    </div>
+
+    <p id="msg" class="msg" aria-live="polite"></p>
+
+    <button id="go" class="go" type="submit"><span id="goText">ورود</span><span class="spin" aria-hidden="true"></span></button>
+    <button id="signout" class="linkbtn" type="button" hidden>خروج از حساب فعلی</button>
+
+    <p class="help">رمز عبور را فراموش کرده‌اید؟ به مدرسه مراجعه کنید تا رمز جدید بگیرید.</p>
+  </form>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function () {
+  'use strict';
+
+  // Only the public (publishable) key lives here. It is meant for browsers and is limited by RLS in Supabase.
+  const SUPABASE_URL = 'https://rwqutztruyodkdrqztfq.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_8gp_Xa9qG626mwMsMQ_RHA_oDKU_QBg';
+
+  // profiles.role -> panel. The parent panel accepts both "parent" and "guardian".
+  const ROLE_PAGE = {
+    manager: 'manager.html',
+    teacher: 'teacher.html',
+    student: 'student.html',
+    parent: 'parent.html',
+    guardian: 'parent.html'
+  };
+  const HITS_KEY = 'school_route_hits';
+  const HITS_WINDOW_MS = 20000;
+  const HITS_LIMIT = 3;
+
+  const $ = (id) => document.getElementById(id);
+  let db = null;
+  try { db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch (e) { db = null; }
+
+  /* ---------- small helpers ---------- */
+  function show(which) {
+    $('boot').hidden = which !== 'boot';
+    $('loginForm').hidden = which !== 'form';
+    if (which === 'form' && window.matchMedia && matchMedia('(hover:hover) and (pointer:fine)').matches) {
+      $('username').focus({ preventScroll: true });
+    }
+  }
+  function say(text, kind) {
+    const m = $('msg');
+    m.textContent = text || '';
+    if (text) m.dataset.kind = kind || 'err'; else delete m.dataset.kind;
+  }
+  function busy(on) {
+    $('go').disabled = on;
+    $('go').classList.toggle('busy', on);
+    $('goText').textContent = on ? 'در حال ورود…' : 'ورود';
+  }
+  function latin(s) {
+    return String(s)
+      .replace(/[\u06F0-\u06F9]/g, (c) => String(c.charCodeAt(0) - 0x06F0))
+      .replace(/[\u0660-\u0669]/g, (c) => String(c.charCodeAt(0) - 0x0660));
+  }
+  function cleanUser(s) {
+    return latin(s).replace(/[\s\u200b-\u200f\u202a-\u202e\u2066-\u2069\ufeff]/g, '').toLowerCase();
+  }
+  function emailOf(u) { return u.indexOf('@') > -1 ? u : u + '@school-demo.ir'; }
+
+  function explain(err) {
+    const m = String((err && err.message) || '').toLowerCase();
+    const st = err && err.status;
+    if (/invalid login credentials|invalid_credentials/.test(m)) return 'نام کاربری یا رمز عبور درست نیست.';
+    if (/email not confirmed/.test(m)) return 'این حساب هنوز فعال نشده است. به مدرسه خبر دهید.';
+    if (st === 429 || /rate limit|too many/.test(m)) return 'تلاش‌های ناموفق زیاد بود. چند دقیقه بعد دوباره امتحان کنید.';
+    if (/failed to fetch|network|load failed|fetch/.test(m)) return 'ارتباط با سرور برقرار نشد. اینترنت را بررسی کنید و دوباره تلاش کنید.';
+    return 'ورود انجام نشد. دوباره تلاش کنید؛ اگر تکرار شد به مدرسه خبر دهید.';
+  }
+
+  /* ---------- redirect-loop guard ---------- */
+  function readHits() {
+    try {
+      const now = Date.now();
+      return JSON.parse(sessionStorage.getItem(HITS_KEY) || '[]').filter((t) => now - t < HITS_WINDOW_MS);
+    } catch (e) { return []; }
+  }
+  function go(page) {
+    try { sessionStorage.setItem(HITS_KEY, JSON.stringify(readHits().concat(Date.now()))); } catch (e) { /* ignore */ }
+    location.replace(page);
+  }
+  async function quietSignOut() {
+    try { await db.auth.signOut(); } catch (e) { /* ignore */ }
+    try { sessionStorage.removeItem(HITS_KEY); } catch (e) { /* ignore */ }
+  }
+
+  /* ---------- decide which panel a signed-in user belongs to ---------- */
+  async function decide(user) {
+    const r = await db.from('profiles').select('id,role,full_name').eq('id', user.id).maybeSingle();
+    if (r.error) {
+      if (/jwt|expired/i.test(r.error.message || '')) {
+        await quietSignOut();
+        return { ok: false, msg: 'نشست شما تمام شده است. دوباره وارد شوید.' };
+      }
+      return { ok: false, msg: explain(r.error) };
+    }
+    if (!r.data) {
+      await quietSignOut();
+      return { ok: false, msg: 'پروفایل این حساب پیدا نشد. به مدرسه خبر دهید.' };
+    }
+    const page = ROLE_PAGE[String(r.data.role || '').trim().toLowerCase()];
+    if (!page) {
+      await quietSignOut();
+      return { ok: false, msg: 'نقش این حساب مشخص نیست. به مدرسه خبر دهید.' };
+    }
+    return { ok: true, page: page };
+  }
+
+  /* ---------- events ---------- */
+  $('reveal').addEventListener('click', function () {
+    const p = $('password');
+    const reveal = p.type === 'password';
+    p.type = reveal ? 'text' : 'password';
+    this.textContent = reveal ? 'پنهان' : 'نمایش';
+    this.setAttribute('aria-pressed', String(reveal));
+    this.setAttribute('aria-label', reveal ? 'پنهان کردن رمز عبور' : 'نمایش رمز عبور');
+  });
+
+  $('signout').addEventListener('click', async function () {
+    await quietSignOut();
+    this.hidden = true;
+    say('');
+  });
+
+  $('loginForm').addEventListener('submit', async function (ev) {
+    ev.preventDefault();
+    if (!db) { say('بارگذاری سامانه ناموفق بود. اینترنت را بررسی کنید و صفحه را دوباره باز کنید.'); return; }
+    const user = cleanUser($('username').value);
+    const pass = $('password').value;
+    if (!user || !pass) { say('نام کاربری و رمز عبور را وارد کنید.'); return; }
+
+    say('');
+    busy(true);
+    let leaving = false;
+    try {
+      const email = emailOf(user);
+      let res = await db.auth.signInWithPassword({ email: email, password: pass });
+      // Phones often type Persian digits: if the password as typed was rejected, try it with Latin digits.
+      if (res.error && /invalid login credentials/i.test(res.error.message || '') && latin(pass) !== pass) {
+        res = await db.auth.signInWithPassword({ email: email, password: latin(pass) });
+      }
+      if (res.error) { say(explain(res.error)); return; }
+
+      say('ورود انجام شد؛ در حال انتقال به پنل شما…', 'info');
+      const out = await decide(res.data.user);
+      if (!out.ok) { say(out.msg); return; }
+      leaving = true;
+      go(out.page);
+    } catch (e) {
+      say(explain(e));
+    } finally {
+      if (!leaving) busy(false);
+    }
+  });
+
+  /* ---------- start: skip the form if a valid session already exists ---------- */
+  async function start() {
+    if (!db) {
+      show('form');
+      say('بارگذاری سامانه ناموفق بود. اینترنت را بررسی کنید و صفحه را دوباره باز کنید.');
+      $('go').disabled = true;
+      return;
+    }
+    let session = null;
+    try {
+      const r = await db.auth.getSession();
+      session = r && r.data && r.data.session;
+    } catch (e) { session = null; }
+
+    if (!session) { show('form'); return; }
+
+    if (readHits().length >= HITS_LIMIT) {
+      show('form');
+      say('ورود شما چند بار پشت‌سر هم به این صفحه برگشت. از حساب فعلی خارج شوید و دوباره وارد شوید؛ اگر تکرار شد به مدرسه خبر دهید.', 'info');
+      $('signout').hidden = false;
+      return;
+    }
+
+    let out;
+    try { out = await decide(session.user); } catch (e) { out = { ok: false, msg: explain(e) }; }
+    if (out.ok) { go(out.page); return; }
+    show('form');
+    say(out.msg);
+  }
+  start();
+})();
+</script>
+
+<style id="school-polish">
+/* مدرسهٔ من — polished unified interface */
+:root{--school-teal:#078b91;--school-aqua:#19bdb4;--school-ink:#183c45;--school-muted:#6d858b;--school-line:#dfebed;--school-shadow:0 18px 48px rgba(23,68,77,.09)}
+html{scroll-behavior:smooth}
+body{background-color:#f3f8fa!important;background-image:radial-gradient(ellipse at 8% 0,rgba(25,189,180,.11),transparent 33%),radial-gradient(ellipse at 95% 20%,rgba(89,130,232,.08),transparent 32%)!important;background-attachment:fixed!important;color:var(--school-ink)!important}
+button,input,select,textarea{font-family:Vazirmatn,Tahoma,Arial,sans-serif}
+button,.btn,.primary-btn,.primary,.secondary,.secondary-btn,.smallbtn{transition:transform .18s ease,box-shadow .18s ease,background .18s ease,border-color .18s ease!important}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid rgba(25,189,180,.45)!important;outline-offset:2px!important}
+.top,.topbar,header.top{background:linear-gradient(115deg,#096e7b 0%,#078f96 54%,#27bdb2 100%)!important;box-shadow:0 10px 32px rgba(8,116,126,.18)!important}
+.card,.panel,.school,.login,.tile,.stat,.stats,.summary,.credentials,.calendar-card,.table-wrap,.tablewrap,.page-head,.form-grid,.circular-item,.schedule-row,.notice,.tile-list,.cards>*,.grid-3>*{border-color:rgba(205,225,229,.9)!important;box-shadow:var(--school-shadow)!important}
+input,select,textarea{border-color:#d9e7e9!important;transition:border-color .18s ease,box-shadow .18s ease!important}
+input:focus,select:focus,textarea:focus{border-color:#19bdb4!important;box-shadow:0 0 0 4px rgba(25,189,180,.12)!important;outline:none!important}
+button:not(:disabled):hover,.btn:not(:disabled):hover,.tile:hover{transform:translateY(-2px)}
+button:disabled,.btn:disabled{cursor:not-allowed;opacity:.58}
+@media(max-width:700px){body{background-attachment:scroll!important}.top,.topbar,header.top{box-shadow:0 7px 24px rgba(8,116,126,.16)!important}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</body>
+</html>
