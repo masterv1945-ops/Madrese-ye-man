@@ -1,0 +1,2758 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" data-theme="teal" data-mode="light">
+<head>
+  <meta charset="UTF-8">
+<script>
+try {
+  const savedTheme = localStorage.getItem('schoolpanel.theme');
+  if (/^(teal|purple|blue|green|orange)-(light|dark)$/.test(savedTheme || '')) {
+    const [palette, mode] = savedTheme.split('-');
+    document.documentElement.dataset.theme = palette;
+    document.documentElement.dataset.mode = mode;
+  }
+} catch (_) {}
+</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>پنل مدیریت مدرسه</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: Tahoma, Arial, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+
+    .topbar {
+      height: 70px;
+      background: #111827;
+      border-bottom: 1px solid #263244;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 25px;
+      position: fixed;
+      top: 0;
+      right: 0;
+      left: 0;
+      z-index: 100;
+    }
+
+    .top-title {
+      font-size: 21px;
+      font-weight: bold;
+    }
+
+    .manager-name {
+      color: #94a3b8;
+      font-size: 14px;
+    }
+
+    .layout {
+      display: flex;
+      padding-top: 70px;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      width: 245px;
+      background: #111827;
+      border-left: 1px solid #263244;
+      padding: 20px 12px;
+      position: fixed;
+      top: 70px;
+      right: 0;
+      bottom: 0;
+      overflow-y: auto;
+    }
+
+    .menu-title {
+      color: #64748b;
+      font-size: 12px;
+      margin: 8px 12px 12px;
+    }
+
+    .menu-btn {
+      width: 100%;
+      border: none;
+      background: transparent;
+      color: #cbd5e1;
+      text-align: right;
+      padding: 13px 15px;
+      margin-bottom: 5px;
+      border-radius: 9px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .menu-btn:hover,
+    .menu-btn.active {
+      background: #1e293b;
+      color: white;
+    }
+
+    .logout {
+      color: #fca5a5;
+    }
+
+    .hidden{display:none!important}
+    .muted{color:#94a3b8}
+    .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}
+
+    .content {
+      margin-right: 245px;
+      width: calc(100% - 245px);
+      padding: 30px;
+    }
+
+    .page {
+      display: none;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    .page-title {
+      font-size: 25px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .page-description {
+      color: #94a3b8;
+      margin-bottom: 25px;
+      font-size: 14px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .card {
+      background: #111827;
+      border: 1px solid #263244;
+      border-radius: 13px;
+      padding: 22px;
+    }
+
+    .card-title {
+      color: #94a3b8;
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+
+    .card-value {
+      font-size: 30px;
+      font-weight: bold;
+    }
+
+    .panel {
+      background: #111827;
+      border: 1px solid #263244;
+      border-radius: 13px;
+      padding: 22px;
+      margin-bottom: 20px;
+    }
+
+    .panel h3 {
+      margin-top: 0;
+      margin-bottom: 18px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+    }
+
+    label {
+      display: block;
+      color: #cbd5e1;
+      font-size: 13px;
+      margin-bottom: 7px;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      background: #0f172a;
+      color: white;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 11px;
+      outline: none;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: #64748b;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .primary-btn {
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 11px 18px;
+      margin-top: 18px;
+    }
+
+    .primary-btn:hover {
+      background: #1d4ed8;
+    }
+
+    .danger-btn {
+      background: #7f1d1d;
+      color: white;
+      border: none;
+      border-radius: 7px;
+      padding: 8px 12px;
+    }
+
+    .secondary-btn {
+      background: #334155;
+      color: white;
+      border: none;
+      border-radius: 7px;
+      padding: 9px 13px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 12px;
+      border-bottom: 1px solid #263244;
+      text-align: right;
+      font-size: 13px;
+    }
+
+    th {
+      color: #94a3b8;
+      font-weight: normal;
+    }
+
+    .assignment {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr auto;
+      gap: 10px;
+      margin-bottom: 10px;
+      align-items: end;
+    }
+
+    .assignment button {
+      height: 40px;
+    }
+
+    .message {
+      display: none;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 15px;
+      font-size: 13px;
+    }
+
+    .message.success {
+      display: block;
+      background: #064e3b;
+      color: #a7f3d0;
+    }
+
+    .message.error {
+      display: block;
+      background: #7f1d1d;
+      color: #fecaca;
+    }
+
+    .credentials {
+      background: #020617;
+      border: 1px solid #334155;
+      padding: 15px;
+      border-radius: 10px;
+      margin-top: 15px;
+      display: none;
+    }
+
+    .credentials strong {
+      color: #93c5fd;
+    }
+
+    .empty {
+      text-align: center;
+      color: #64748b;
+      padding: 30px;
+    }
+
+    @media(max-width: 900px) {
+      .sidebar {
+        width: 200px;
+      }
+
+      .hidden{display:none!important}
+    .muted{color:#94a3b8}
+    .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}
+
+    .content {
+        margin-right: 200px;
+        width: calc(100% - 200px);
+        padding: 20px;
+      }
+
+      .cards {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .assignment {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media(max-width: 600px) {
+      .sidebar {
+        width: 100%;
+        position: static;
+        height: auto;
+      }
+
+      .layout {
+        display: block;
+      }
+
+      .hidden{display:none!important}
+    .muted{color:#94a3b8}
+    .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}
+
+    .content {
+        margin-right: 0;
+        width: 100%;
+      }
+
+      .cards {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        position: static;
+      }
+
+      .layout {
+        padding-top: 0;
+      }
+    }
+  
+    /* رابط روشن و فیروزه‌ای مدرسه ی من */
+    body{background:#f1f8f8!important;color:#193b40!important}
+    .topbar{background:#08b9b8!important;color:#fff!important;border-bottom:1px solid #d7eeee!important;box-shadow:0 4px 18px #0b73731a}
+    .top-title{color:#fff!important}
+    .manager-name{color:#eaffff!important}
+    .sidebar{background:#fff!important;border-left:1px solid #e2eeee!important;box-shadow:0 8px 22px #1b5c5c0a}
+    .menu-title{color:#7f999c!important}
+    .menu-btn{color:#45666b!important}
+    .menu-btn:hover,.menu-btn.active{background:#e4f8f7!important;color:#078f90!important}
+    .menu-btn.logout{color:#c24141!important}
+    .content{color:#193b40!important}
+    .page-title,h1,h2,h3{color:#193b40!important}
+    .page-description,.page-desc,.muted{color:#70898d!important}
+    .panel,.card{background:#fff!important;border:1px solid #e7f0f0!important;border-radius:18px!important;box-shadow:0 8px 28px #1b5c5c0a!important;color:#193b40!important}
+    .cards .card{background:#fff!important}
+    .card-title{color:#678286!important}
+    .card-value{color:#079f9f!important}
+    input,select,textarea{background:#fff!important;color:#193b40!important;border:1px solid #dce9e9!important;border-radius:10px!important}
+    input:focus,select:focus,textarea:focus{border-color:#08b9b8!important;box-shadow:0 0 0 3px #08b9b81b!important}
+    .primary-btn{background:#08b9b8!important;color:#fff!important;border-radius:11px!important}
+    .primary-btn:hover{background:#079e9d!important}
+    .secondary-btn{background:#e6f8f7!important;color:#078c8d!important;border-radius:10px!important}
+    .danger-btn{background:#fff0f0!important;color:#b42323!important;border-radius:10px!important}
+    table{background:#fff!important;color:#193b40!important;border-collapse:collapse;width:100%}
+    th{background:#e9f8f7!important;color:#3d676c!important}
+    td,th{border-bottom:1px solid #e5eeee!important;padding:11px 10px!important;text-align:right}
+    .message{border-radius:10px}
+    .hidden{display:none!important}
+    #scheduleTable,#circularList{overflow-x:auto}
+    #circularList .circular-item{border:1px solid #e3eeee;border-radius:13px;padding:14px;margin:10px 0;background:#fbfefe}
+    #circularList .circular-meta{font-size:12px;color:#6d8a8e;margin-top:8px;line-height:1.8}
+    @media(max-width:760px){.topbar{padding:0 14px}.sidebar{width:190px}.content{margin-right:190px;width:calc(100% - 190px);padding:16px}.form-grid{grid-template-columns:1fr!important}.cards{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+    @media(max-width:650px){.layout{display:block;padding-top:70px}.sidebar{position:static;width:100%;height:auto;max-height:none;overflow-x:auto;white-space:nowrap;padding:8px;border-left:0;border-bottom:1px solid #e2eeee}.menu-title{display:none}.menu-btn{display:inline-block;width:auto;max-width:none;font-size:12px;text-align:center;white-space:nowrap;padding:9px 11px;margin:0 3px 3px 0}.content{margin-right:0;width:100%;padding:12px}.top-title{font-size:16px}.manager-name{font-size:12px}.cards{grid-template-columns:1fr 1fr!important}.card-value{font-size:24px}}
+
+  </style>
+
+<style id="schoolpanel-student-theme">
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap');
+:root{
+ --bg:#eef6f6;--surface:#fff;--surface2:#f5fafa;--ink:#233638;--muted:#667c7e;--line:#e6efef;
+ --label:#4a6062;--input-bg:#fbfefe;--input-line:#dbe8e8;--hover:#f2fbfb;
+ --teal:#08b9b8;--teal2:#2fd0cc;--teal3:#0a9fb2;--teal-deep:#067f8c;--teal-soft:#e4f7f6;
+ --brand-ink:#08b9b8;--brand-rgb:8,185,184;--hero-a:#06929d;--hero-b:#0aa7ab;--hero-c:#19b9b4;
+ --shadow:0 1px 2px rgba(20,70,70,.05),0 10px 28px rgba(20,80,80,.07);
+ --shadow-lg:0 2px 4px rgba(20,70,70,.06),0 18px 42px rgba(20,80,80,.15);
+ --danger:#d44747;--ease:cubic-bezier(.2,.8,.25,1);color-scheme:light;
+}
+html[data-mode="dark"]{--bg:#0c1516;--surface:#152123;--surface2:#1b2a2c;--ink:#e6f1f1;--muted:#97aeb0;--line:#243637;--label:#b7cacb;--input-bg:#112021;--input-line:#2b4243;--hover:#1a2b2d;--teal-soft:rgba(62,143,143,.22);--shadow:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.35);--shadow-lg:0 2px 4px rgba(0,0,0,.35),0 18px 42px rgba(0,0,0,.5);--danger:#ff7b7b;color-scheme:dark;}
+html[data-theme="teal"][data-mode="light"]{--teal:#08b9b8;--teal2:#2fd0cc;--teal3:#0a9fb2;--teal-deep:#067f8c;--teal-soft:#e4f7f6;--brand-ink:#08b9b8;--brand-rgb:8,185,184;--hero-a:#06929d;--hero-b:#0aa7ab;--hero-c:#19b9b4}
+html[data-theme="teal"][data-mode="dark"]{--teal:#3e8f8f;--teal2:#5bb5b3;--teal3:#2f7a80;--teal-deep:#7fd6d3;--teal-soft:rgba(62,143,143,.22);--brand-ink:#5bb5b3;--brand-rgb:62,143,143;--hero-a:#0b3f42;--hero-b:#0f5558;--hero-c:#146a6c}
+html[data-theme="purple"][data-mode="light"]{--teal:#7a5bbd;--teal2:#9a7fe0;--teal3:#6a4cae;--teal-deep:#5b3fa3;--teal-soft:#efe9fb;--brand-ink:#7a5bbd;--brand-rgb:122,91,189;--hero-a:#5c3fa0;--hero-b:#6b4db3;--hero-c:#7f62c9}
+html[data-theme="purple"][data-mode="dark"]{--teal:#6c50b0;--teal2:#8f77d4;--teal3:#5a4198;--teal-deep:#c0aef0;--teal-soft:rgba(122,91,189,.24);--brand-ink:#a58ae6;--brand-rgb:108,80,176;--hero-a:#2a1d4d;--hero-b:#3a2870;--hero-c:#4b3590}
+html[data-theme="blue"][data-mode="light"]{--teal:#1e44b8;--teal2:#4a73e8;--teal3:#17358f;--teal-deep:#17358f;--teal-soft:#e6ecfc;--brand-ink:#1e44b8;--brand-rgb:30,68,184;--hero-a:#14338f;--hero-b:#1e44b8;--hero-c:#3a62d6}
+html[data-theme="blue"][data-mode="dark"]{--teal:#2a4fc4;--teal2:#6b8cf0;--teal3:#1f3da0;--teal-deep:#aebffa;--teal-soft:rgba(42,79,196,.26);--brand-ink:#7f9bf5;--brand-rgb:42,79,196;--hero-a:#0f1f5c;--hero-b:#182f8a;--hero-c:#2342b0}
+html[data-theme="green"][data-mode="light"]{--teal:#4aa879;--teal2:#7ccba2;--teal3:#378a63;--teal-deep:#2f7a55;--teal-soft:#e4f5ec;--brand-ink:#4aa879;--brand-rgb:74,168,121;--hero-a:#2f7a55;--hero-b:#3f9468;--hero-c:#55ac7f}
+html[data-theme="green"][data-mode="dark"]{--teal:#55956f;--teal2:#7bbf98;--teal3:#437a5a;--teal-deep:#a6e0bd;--teal-soft:rgba(85,149,111,.24);--brand-ink:#8fd0a9;--brand-rgb:85,149,111;--hero-a:#123324;--hero-b:#1b4a34;--hero-c:#26603f}
+html[data-theme="orange"][data-mode="light"]{--teal:#ec7d30;--teal2:#ffa862;--teal3:#d96a1f;--teal-deep:#b85412;--teal-soft:#fff0e4;--brand-ink:#ec7d30;--brand-rgb:236,125,48;--hero-a:#c4561a;--hero-b:#d96a1f;--hero-c:#ec7d30}
+html[data-theme="orange"][data-mode="dark"]{--teal:#de6d2b;--teal2:#f09a5a;--teal3:#bf5a20;--teal-deep:#ffc299;--teal-soft:rgba(222,109,43,.24);--brand-ink:#ffab72;--brand-rgb:222,109,43;--hero-a:#3d1c0a;--hero-b:#5c2b10;--hero-c:#7d3a15}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{min-height:100%;background:var(--bg);scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{font-family:Vazirmatn,Tahoma,sans-serif!important;color:var(--ink)!important;background:var(--bg)!important;line-height:1.7;}
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(900px 420px at 95% -8%,rgba(var(--brand-rgb),.16) 0,transparent 62%),radial-gradient(700px 480px at -8% 40%,var(--teal-soft) 0,transparent 60%),var(--bg)}
+button,input,select,textarea{font:inherit}
+button{transition:background .18s ease,color .18s ease,border-color .18s ease,box-shadow .18s ease,transform .18s ease}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid rgba(var(--brand-rgb),.38);outline-offset:2px}
+/* Shared cards and surfaces */
+.panel,.card,.stat,.school,.login,.tile,.notice,.credentials,.circular-item,.circular-card{background:var(--surface)!important;color:var(--ink)!important;border:1px solid var(--line)!important;border-radius:20px!important;box-shadow:var(--shadow)!important}
+input,select,textarea{background:var(--input-bg)!important;color:var(--ink)!important;border:1px solid var(--input-line)!important;border-radius:12px!important}
+label{color:var(--label)!important;font-weight:600}
+table{background:var(--surface)!important;color:var(--ink)!important}th{background:var(--teal-soft)!important;color:var(--label)!important}td,th{border-color:var(--line)!important}
+.primary,.primary-btn,.btn,.go{background:linear-gradient(135deg,var(--hero-a),var(--hero-b),var(--hero-c))!important;color:#fff!important;border:0!important;border-radius:13px!important;box-shadow:0 7px 18px rgba(var(--brand-rgb),.16)}
+.primary:hover,.primary-btn:hover,.btn:hover,.go:hover{filter:brightness(.96);transform:translateY(-1px)}
+.secondary,.secondary-btn,.outline{background:var(--teal-soft)!important;color:var(--teal-deep)!important;border:1px solid var(--line)!important;border-radius:12px!important}
+.danger,.danger-btn{background:rgba(212,71,71,.1)!important;color:var(--danger)!important;border-radius:12px!important}
+.muted,.desc,.page-description,.page-desc{color:var(--muted)!important}
+.hidden,[hidden]{display:none!important}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+</style>
+<style id="student-manager-layout">
+body{min-height:100vh;background:var(--bg)!important}
+.topbar{height:auto!important;min-height:76px;background:linear-gradient(115deg,var(--hero-a),var(--hero-b),var(--hero-c))!important;border:0!important;box-shadow:0 8px 25px rgba(var(--brand-rgb),.17)!important;padding:14px 24px!important;border-radius:0 0 22px 22px}
+.top-title{font-family:Vazirmatn,Tahoma,sans-serif!important;font-weight:800!important;letter-spacing:-.02em}
+.manager-name{font-family:Vazirmatn,Tahoma,sans-serif!important;color:#fff!important;background:#ffffff20;border:1px solid #ffffff40;border-radius:14px;padding:7px 12px}
+.layout{min-height:calc(100vh - 76px)!important;padding-top:76px!important}
+.sidebar{top:92px!important;bottom:14px!important;right:14px!important;width:228px!important;padding:18px 12px!important;background:var(--surface)!important;border:1px solid var(--line)!important;border-radius:22px!important;box-shadow:var(--shadow)!important}
+.menu-title{color:var(--muted)!important;font-size:12px!important;font-weight:700!important;margin:8px 12px 14px!important}
+.menu-btn{color:var(--label)!important;border-radius:13px!important;margin:3px 0!important;padding:12px 14px!important;font-family:Vazirmatn,Tahoma,sans-serif!important;font-weight:500!important;transition:all .18s ease!important}
+.menu-btn:hover,.menu-btn.active{background:var(--teal-soft)!important;color:var(--teal-deep)!important}
+.content{margin-right:256px!important;width:calc(100% - 256px)!important;max-width:1500px;padding:27px!important;color:var(--ink)!important}
+.page-title{font-size:26px!important;font-weight:800!important;letter-spacing:-.025em;margin-bottom:7px!important;color:var(--ink)!important}
+.page-description{line-height:1.9;font-size:13px!important;color:var(--muted)!important}
+.cards{gap:14px!important}
+.card{padding:21px!important}
+.card-title{color:var(--muted)!important;font-weight:600}
+.card-value{color:var(--brand-ink)!important;font-size:30px!important;font-weight:800!important}
+.panel{padding:22px!important;margin-bottom:18px!important}
+.form-grid{gap:15px!important}
+input,select,textarea{min-height:44px;padding:10px 12px!important}
+.primary-btn{padding:11px 18px!important;font-weight:700!important;margin-top:15px!important}
+.secondary-btn,.danger-btn{padding:9px 13px!important}
+table{overflow:hidden;border-radius:13px}
+th{font-weight:700!important}
+.message.success{background:var(--teal-soft)!important;color:var(--teal-deep)!important;border:1px solid var(--line)!important}
+.message.error{background:rgba(212,71,71,.1)!important;color:var(--danger)!important;border:1px solid rgba(212,71,71,.14)!important}
+.credentials{padding:16px!important}
+.credentials strong{color:var(--brand-ink)!important}
+.empty{color:var(--muted)!important}
+#circularList .circular-item{background:var(--surface)!important;border:1px solid var(--line)!important;border-radius:16px!important;box-shadow:var(--shadow)!important}
+#circularList .circular-meta{color:var(--muted)!important}
+@media(max-width:900px){.sidebar{width:208px!important}.content{margin-right:230px!important;width:calc(100% - 230px)!important;padding:18px!important}}
+@media(max-width:650px){.topbar{position:sticky!important;top:0!important;min-height:66px;padding:10px 13px!important;border-radius:0 0 18px 18px!important}.layout{display:block!important;padding-top:0!important}.sidebar{position:sticky!important;top:66px!important;right:auto!important;bottom:auto!important;width:100%!important;max-height:none!important;height:auto!important;display:flex;align-items:center;gap:3px;overflow-x:auto!important;white-space:nowrap;padding:8px!important;border-radius:0 0 16px 16px!important;border-left:0!important;z-index:60}.menu-title{display:none!important}.menu-btn{display:inline-block!important;flex:0 0 auto;width:auto!important;margin:0!important;font-size:12px!important;text-align:center!important;white-space:nowrap;padding:9px 11px!important}.content{margin:0!important;width:100%!important;padding:14px!important}.page-title{font-size:22px!important}.cards{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}.card{padding:15px!important}.card-value{font-size:24px!important}}
+@media(max-width:380px){.cards{grid-template-columns:1fr!important}}
+</style>
+
+<style id="schoolpanel-motion-detail">
+@keyframes smRise{from{opacity:0;transform:translateY(13px) scale(.992)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes smHeaderGleam{0%,68%,100%{transform:translateX(-130%)}82%{transform:translateX(130%)}}
+@keyframes smAmbient{0%,100%{background-position:0% 0%,100% 100%,0 0}50%{background-position:15% 8%,82% 75%,0 0}}
+@keyframes smBadgeIn{0%{opacity:0;transform:scale(.86)}70%{transform:scale(1.05)}100%{opacity:1;transform:scale(1)}}
+body::before{background-size:150% 150%,130% 130%,auto!important;animation:smAmbient 24s ease-in-out infinite}
+.topbar{isolation:isolate;overflow:hidden}
+.topbar::after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background:linear-gradient(108deg,transparent 34%,rgba(255,255,255,.2) 49%,transparent 64%);transform:translateX(-130%);animation:smHeaderGleam 8.5s ease-in-out 1.4s infinite}
+.topbar>*{position:relative;z-index:1}
+.sidebar{backdrop-filter:blur(14px);transition:box-shadow .25s ease,border-color .25s ease}
+.menu-btn{position:relative;overflow:hidden;transition:background .2s ease,color .2s ease,transform .2s ease,box-shadow .2s ease!important}
+.menu-btn:hover{transform:translateX(-3px);box-shadow:0 5px 13px rgba(var(--brand-rgb),.08)}
+.menu-btn.active{font-weight:800}
+.page.active{animation:smRise .42s var(--ease, cubic-bezier(.2,.8,.25,1)) both}
+.page-title,.page-description{animation:smRise .45s ease both}
+.panel,.card,.credentials,.stat{transition:transform .24s ease,box-shadow .24s ease,border-color .24s ease!important}
+.card:hover,.stat:hover,.credentials:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)!important;border-color:rgba(var(--brand-rgb),.26)!important}
+.panel{animation:smRise .5s ease both}
+.cards .card:nth-child(2),.grid-3>*:nth-child(2){animation-delay:.06s}
+.cards .card:nth-child(3),.grid-3>*:nth-child(3){animation-delay:.12s}
+.cards .card:nth-child(4),.grid-3>*:nth-child(4){animation-delay:.18s}
+.primary-btn,.secondary-btn,.danger-btn,.menu-btn{transition:transform .2s ease,box-shadow .2s ease,filter .2s ease!important}
+.primary-btn:hover,.secondary-btn:hover,.danger-btn:hover{transform:translateY(-2px);filter:saturate(1.08)}
+input,select,textarea{transition:border-color .2s ease,box-shadow .2s ease,background-color .2s ease!important}
+input:hover,select:hover,textarea:hover{border-color:rgba(var(--brand-rgb),.45)!important}
+input:focus,select:focus,textarea:focus{box-shadow:0 0 0 4px rgba(var(--brand-rgb),.1)!important}
+table tbody tr{transition:background-color .16s ease}
+table tbody tr:hover{background:var(--teal-soft)!important}
+th{position:sticky;top:0;z-index:1}
+.message,.msg{animation:smRise .25s ease both}
+.chip,.badge,.status,.pill{animation:smBadgeIn .35s ease both}
+.content{scroll-behavior:smooth}
+::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:rgba(var(--brand-rgb),.27);border:3px solid transparent;background-clip:padding-box;border-radius:99px}::-webkit-scrollbar-thumb:hover{background:rgba(var(--brand-rgb),.45);background-clip:padding-box}
+@media(hover:none){.card:hover,.stat:hover,.credentials:hover,.menu-btn:hover{transform:none;box-shadow:var(--shadow)!important}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+</style>
+
+<style id="schoolpanel-student-level-motion">
+/* Student-level motion system: soft entrances, ambient colour movement and tactile feedback. */
+:root{--sfx-ease:cubic-bezier(.2,.8,.25,1);--sfx-spring:cubic-bezier(.3,1.35,.45,1)}
+@keyframes sfxRise{from{opacity:0;transform:translateY(18px) scale(.985);filter:blur(2px)}to{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}}
+@keyframes sfxPage{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+@keyframes sfxPop{0%{opacity:0;transform:scale(.72)}65%{opacity:1;transform:scale(1.045)}100%{transform:scale(1)}}
+@keyframes sfxFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes sfxGradient{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+@keyframes sfxSheen{0%,61%,100%{transform:translateX(-135%)}79%{transform:translateX(135%)}}
+@keyframes sfxAmbient{0%,100%{background-position:0% 0%,100% 100%,0 0}50%{background-position:15% 8%,82% 78%,0 0}}
+@keyframes sfxPulse{0%,100%{box-shadow:0 0 0 0 rgba(var(--brand-rgb,8,185,184),.0)}50%{box-shadow:0 0 0 7px rgba(var(--brand-rgb,8,185,184),.09)}}
+@keyframes sfxRow{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes sfxNudge{0%,100%{transform:translateX(0)}35%{transform:translateX(-2px)}70%{transform:translateX(2px)}}
+@keyframes sfxShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(2px)}}
+html{scroll-behavior:smooth}
+body::before{background-size:150% 150%,130% 130%,auto!important;animation:sfxAmbient 23s ease-in-out infinite}
+body::after{content:"";position:fixed;z-index:-1;pointer-events:none;inset:auto auto -170px -130px;width:390px;height:390px;border-radius:50%;background:radial-gradient(circle,rgba(var(--brand-rgb,8,185,184),.12),transparent 68%);filter:blur(8px);animation:sfxFloat 10s ease-in-out infinite}
+button,a,.tile,.card,.panel,.stat,.school,.login,.notice,.credentials{ -webkit-tap-highlight-color:transparent }
+button{transition:transform .25s var(--sfx-spring),box-shadow .25s ease,filter .22s ease,border-color .22s ease}
+button:active{transform:scale(.975)}
+:focus-visible{outline:3px solid rgba(var(--brand-rgb,8,185,184),.34)!important;outline-offset:3px!important}
+input,select,textarea{transition:transform .22s var(--sfx-spring),border-color .22s ease,box-shadow .25s ease,background .22s ease!important}
+input:hover,select:hover,textarea:hover{border-color:rgba(var(--brand-rgb,8,185,184),.45)!important}
+input:focus,select:focus,textarea:focus{transform:translateY(-1px);box-shadow:0 0 0 4px rgba(var(--brand-rgb,8,185,184),.10)!important}
+.table-wrap, .table-wrap table, .content table{border-radius:14px}
+tbody tr{transition:background-color .18s ease,transform .2s ease}
+tbody tr:hover{background:var(--teal-soft,#e4f7f6)!important}
+tbody tr:nth-child(1){animation:sfxRow .4s .02s both}tbody tr:nth-child(2){animation:sfxRow .4s .05s both}tbody tr:nth-child(3){animation:sfxRow .4s .08s both}tbody tr:nth-child(4){animation:sfxRow .4s .11s both}tbody tr:nth-child(5){animation:sfxRow .4s .14s both}tbody tr:nth-child(6){animation:sfxRow .4s .17s both}tbody tr:nth-child(7){animation:sfxRow .4s .20s both}tbody tr:nth-child(8){animation:sfxRow .4s .23s both}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+</style>
+<style id="schoolpanel-student-level-motion-page">
+.topbar{isolation:isolate;overflow:hidden}
+.topbar::after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background:linear-gradient(108deg,transparent 34%,rgba(255,255,255,.22) 49%,transparent 64%);transform:translateX(-135%);animation:sfxSheen 8.5s ease-in-out 1.1s infinite}
+.topbar>*{position:relative;z-index:1}
+.sidebar{transform-origin:top right;animation:sfxRise .62s var(--sfx-ease) both}
+.menu-title{animation:sfxPage .48s .08s both}
+.menu-btn{position:relative;overflow:hidden;transition:transform .25s var(--sfx-spring),background .22s ease,color .22s ease,box-shadow .22s ease!important}
+.menu-btn::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(100deg,transparent 25%,rgba(var(--brand-rgb),.10) 50%,transparent 75%);transform:translateX(-110%);transition:transform .5s ease}
+.menu-btn:hover::after{transform:translateX(110%)}
+.menu-btn:hover{transform:translateX(-3px);box-shadow:0 5px 16px rgba(var(--brand-rgb),.08)}
+.menu-btn.active{font-weight:800;box-shadow:inset -3px 0 0 var(--teal)}
+.page.active{animation:sfxPage .38s var(--sfx-ease) both}
+.page.active>.page-title,.page.active>.page-description,.page.active>.page-desc{animation:sfxRise .52s var(--sfx-ease) both}
+.page.active>.panel,.page.active>.cards,.page.active>.card{animation:sfxRise .6s var(--sfx-ease) both}
+.cards{perspective:900px}
+.cards>.card{transform-origin:center bottom;animation:sfxRise .64s var(--sfx-spring) both;transition:transform .28s var(--sfx-spring),box-shadow .28s ease,border-color .25s ease!important}
+.cards>.card:nth-child(2){animation-delay:.06s}.cards>.card:nth-child(3){animation-delay:.12s}.cards>.card:nth-child(4){animation-delay:.18s}.cards>.card:nth-child(5){animation-delay:.24s}.cards>.card:nth-child(6){animation-delay:.3s}
+.card:hover,.panel:hover{border-color:rgba(var(--brand-rgb),.24)!important;box-shadow:var(--shadow-lg)!important}
+.card:hover{transform:translateY(-4px) scale(1.005)}
+.panel{transition:transform .25s var(--sfx-ease),box-shadow .25s ease,border-color .25s ease!important}
+.primary-btn,.secondary-btn,.danger-btn,.logout{position:relative;overflow:hidden;transition:transform .22s var(--sfx-spring),box-shadow .22s ease,filter .2s ease!important}
+.primary-btn{background-image:linear-gradient(110deg,var(--hero-a),var(--hero-b) 40%,var(--hero-c) 55%,var(--hero-a))!important;background-size:230% 100%!important;animation:sfxGradient 8s ease-in-out 1.3s infinite}
+.primary-btn::after,.secondary-btn::after,.danger-btn::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.28) 50%,transparent 70%);transform:translateX(-135%);transition:transform .7s ease}
+.primary-btn:hover::after,.secondary-btn:hover::after,.danger-btn:hover::after{transform:translateX(135%)}
+.primary-btn:hover,.secondary-btn:hover,.danger-btn:hover,.logout:hover{transform:translateY(-2px);filter:saturate(1.08);box-shadow:0 10px 22px rgba(var(--brand-rgb),.14)}
+.credentials{animation:sfxPop .4s var(--sfx-spring) both}
+.message.success,.message.error{animation:sfxRise .3s ease both}
+.empty{animation:sfxRise .55s var(--sfx-ease) both}
+.circular-item{animation:sfxRise .45s var(--sfx-ease) both}
+@media(hover:none){.card:hover,.panel:hover,.menu-btn:hover{transform:none;box-shadow:var(--shadow)!important}}
+</style>
+</head>
+
+<body>
+
+<header class="topbar">
+  <div class="top-title">پنل مدیریت مدرسه</div>
+  <div class="manager-name" id="managerName">در حال بررسی...</div>
+</header>
+
+<div class="layout">
+
+  <aside class="sidebar">
+
+    <div class="menu-title">مدیریت مدرسه</div>
+
+    <button class="menu-btn active" onclick="showPage('dashboard', this)">
+      داشبورد
+    </button>
+<button class="menu-btn" data-sl="chat" onclick="showPage('chat', this)">پیام‌ها <span class="sl-badge" data-school-badge="chat"></span></button>
+<button class="menu-btn" data-sl="notifications" onclick="showPage('notifications', this)">اعلان‌ها <span class="sl-badge" data-school-badge="notif"></span></button>
+
+    <button class="menu-btn" onclick="showPage('teachers', this)">
+      مدیریت معلم‌ها
+    </button>
+
+    <button class="menu-btn" onclick="showPage('students', this)">
+      مدیریت دانش‌آموزها
+    </button>
+
+    <button class="menu-btn" onclick="showPage('parents', this)">
+      مدیریت والدین
+    </button>
+
+    <button class="menu-btn" onclick="showPage('assignments', this)">
+      تخصیص درس و کلاس
+    </button>
+
+    <button class="menu-btn" onclick="showPage('schedule', this)">
+      برنامه هفتگی
+    </button>
+
+    <button class="menu-btn" onclick="showPage('circulars', this)">
+      بخش‌نامه هفتگی
+    </button>
+
+    <button class="menu-btn" onclick="showPage('academic-exams', this)">
+      امتحانات و ثبت نمره
+    </button>
+
+    <button class="menu-btn" onclick="showPage('academic-attendance', this)">
+      حضور و غیاب
+    </button>
+
+    <button class="menu-btn" onclick="showPage('academic-periodic', this)">
+      نمرات دوره‌ای
+    </button>
+
+    <button class="menu-btn" onclick="showPage('reports', this)">
+      ثبت کارنامه
+    </button>
+
+    <button class="menu-btn" onclick="showPage('password', this)">
+      تغییر رمز عبور
+    </button>
+
+    <br>
+
+    <button class="menu-btn logout" onclick="logout()">
+      خروج از حساب
+    </button>
+
+  </aside>
+
+  <main class="content">
+
+    <!-- DASHBOARD -->
+    <section id="dashboard" class="page active">
+
+      <div class="page-title">داشبورد</div>
+      <div class="page-description">
+        نمای کلی اطلاعات مدرسه
+      </div>
+
+      <div class="cards">
+
+        <div class="card">
+          <div class="card-title">تعداد معلم‌ها</div>
+          <div class="card-value" id="teacherCount">-</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">تعداد دانش‌آموزها</div>
+          <div class="card-value" id="studentCount">-</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">تعداد والدین</div>
+          <div class="card-value" id="parentCount">-</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">تعداد مدیرها</div>
+          <div class="card-value" id="managerCount">-</div>
+        </div>
+
+      </div>
+
+      <div class="panel">
+        <h3>وضعیت سیستم</h3>
+        <p id="systemStatus">در حال بارگذاری...</p>
+      </div>
+
+    </section>
+
+
+    <!-- TEACHERS -->
+    <section id="teachers" class="page">
+
+      <div class="page-title">مدیریت معلم‌ها</div>
+
+      <div class="page-description">
+        ثبت معلم جدید و تعیین درس و کلاس‌های او
+      </div>
+
+      <div class="panel">
+
+        <h3>ثبت معلم جدید</h3>
+
+        <div class="form-grid">
+
+          <div>
+            <label>نام و نام خانوادگی</label>
+            <input id="teacherName" placeholder="مثلاً محمد حسین ضیایی">
+          </div>
+
+        </div>
+
+        <h4>کلاس‌ها و درس‌های معلم</h4>
+
+        <div id="teacherAssignments"></div>
+
+        <div class="page-description" style="margin-top:10px">نمونه کلاس: نهم شهید الله دادی</div>
+
+        <button class="secondary-btn" onclick="addTeacherAssignment()">
+          + افزودن کلاس
+        </button>
+
+        <br>
+
+        <button class="primary-btn" onclick="createTeacher()">
+          ثبت معلم
+        </button>
+
+        <div id="teacherMessage" class="message"></div>
+
+        <div id="teacherCredentials" class="credentials"></div>
+
+        <div class="page-description" style="margin-top:10px">نمونه معلم: علی رضایی</div>
+
+      </div>
+
+      <div class="panel">
+
+        <h3>لیست معلم‌ها</h3>
+
+        <table>
+          <thead>
+            <tr>
+              <th>نام</th>
+              <th>نام کاربری</th>
+              <th>درس</th>
+              <th>رمز عبور</th>
+              <th>عملیات</th>
+            </tr>
+          </thead>
+
+          <tbody id="teachersTable">
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+
+    <!-- STUDENTS -->
+    <section id="students" class="page">
+
+      <div class="page-title">مدیریت دانش‌آموزها</div>
+
+      <div class="page-description">
+        ثبت دانش‌آموز و اختصاص کلاس
+      </div>
+
+      <div class="panel">
+
+        <h3>ثبت دانش‌آموز جدید</h3>
+
+        <div class="form-grid">
+
+          <div>
+            <label>نام و نام خانوادگی</label>
+            <input id="studentName" placeholder="مثلاً معراج غلامی">
+          </div>
+
+          <div>
+            <label>پایه</label>
+            <input id="studentGrade" placeholder="مثلاً نهم">
+          </div>
+
+          <div>
+            <label>کلاس</label>
+            <input id="studentClass" placeholder="مثلاً شهید الله دادی">
+          </div>
+
+        </div>
+
+        <button class="primary-btn" onclick="createStudent()">
+          ثبت دانش‌آموز
+        </button>
+
+        <div id="studentMessage" class="message"></div>
+
+        <div id="studentCredentials" class="credentials"></div>
+
+        <div class="page-description" style="margin-top:10px">نمونه دانش‌آموز: محمد احمدی — پایه نهم — شهید هادی</div>
+
+      </div>
+
+      <div class="panel">
+
+        <h3>لیست دانش‌آموزها</h3>
+
+        <table>
+
+          <thead>
+            <tr>
+              <th>نام</th>
+              <th>نام کاربری</th>
+              <th>پایه</th>
+              <th>کلاس</th>
+              <th>رمز عبور</th>
+              <th>عملیات</th>
+            </tr>
+          </thead>
+
+          <tbody id="studentsTable">
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+
+    <!-- PARENTS -->
+    <section id="parents" class="page">
+
+      <div class="page-title">مدیریت والدین</div>
+
+      <div class="page-description">
+        ساخت حساب والد و اتصال آن به دانش‌آموز
+      </div>
+
+      <div class="panel">
+
+        <h3>ثبت والد جدید</h3>
+
+        <div class="form-grid">
+
+          <div>
+            <label>نام و نام خانوادگی والد</label>
+            <input id="parentName" placeholder="مثلاً ولی معراج غلامی">
+          </div>
+
+          <div>
+            <label>دانش‌آموز</label>
+            <select id="parentStudent">
+              <option value="">انتخاب دانش‌آموز</option>
+            </select>
+          </div>
+
+        </div>
+
+        <button class="primary-btn" onclick="createParent()">
+          ثبت والد
+        </button>
+
+        <div id="parentMessage" class="message"></div>
+
+        <div id="parentCredentials" class="credentials"></div>
+
+      </div>
+
+      <div class="panel">
+
+        <h3>لیست والدین</h3>
+
+        <table>
+
+          <thead>
+            <tr>
+              <th>نام</th>
+              <th>نام کاربری</th>
+            </tr>
+          </thead>
+
+          <tbody id="parentsTable">
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+
+    <!-- ASSIGNMENTS -->
+    <section id="assignments" class="page">
+
+      <div class="page-title">تخصیص درس و کلاس</div>
+
+      <div class="page-description">
+        تعیین کلاس و درس برای معلم‌های موجود
+      </div>
+
+      <div class="panel">
+
+        <div class="form-grid">
+
+          <div>
+            <label>معلم</label>
+            <select id="assignmentTeacher">
+              <option value="">انتخاب معلم</option>
+            </select>
+          </div>
+
+          <div>
+            <label>درس</label>
+            <input id="assignmentSubject" placeholder="مثلاً علوم">
+          </div>
+
+          <div>
+            <label>پایه</label>
+            <input id="assignmentGrade" placeholder="مثلاً نهم">
+          </div>
+
+          <div>
+            <label>کلاس</label>
+            <input id="assignmentClass" placeholder="مثلاً شهید الله دادی">
+          </div>
+
+        </div>
+
+        <button class="primary-btn" onclick="addAssignment()">
+          ثبت تخصیص
+        </button>
+
+        <div id="assignmentMessage" class="message"></div>
+
+      </div>
+
+      <div class="panel">
+
+        <h3>تخصیص‌های موجود</h3>
+
+        <table>
+
+          <thead>
+            <tr>
+              <th>معلم</th>
+              <th>درس</th>
+              <th>پایه</th>
+              <th>کلاس</th>
+            </tr>
+          </thead>
+
+          <tbody id="assignmentsTable">
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+
+    <!-- REPORT CARDS -->
+    <section id="academic-exams" class="page">
+      <div class="page-title">امتحانات و ثبت نمره</div>
+      <div class="page-desc">مدیر می‌تواند معلم، درس و کلاس را انتخاب کند، امتحان بسازد و نمره دانش‌آموزان همان کلاس را ثبت کند.</div>
+      <div class="panel"><div class="grid-3"><div><label>معلم / درس / کلاس</label><select id="academicExamAssignment" onchange="managerAcademicClassChanged('exam')"></select></div><div><label>پایه</label><input id="academicExamGrade" disabled></div><div><label>کلاس</label><input id="academicExamClass" disabled></div></div><div id="academicExamMessage" class="message"></div></div>
+      <div class="panel"><h3>ایجاد امتحان</h3><div class="grid-3"><div><label>عنوان امتحان</label><input id="managerExamTitle" placeholder="مثلاً امتحان علوم نوبت اول"></div><div><label>تاریخ</label><input id="managerExamDate" type="date"></div><div><label>حداکثر نمره</label><input id="managerExamMax" type="number" value="20" min="1"></div></div><button class="primary-btn" onclick="managerCreateExam()">ایجاد امتحان</button></div>
+      <div class="panel"><h3>امتحان‌های کلاس</h3><div id="managerExamList"></div></div>
+      <div class="panel hidden" id="managerScorePanel"><h3 id="managerScoreTitle"></h3><div id="managerScoreTable"></div><button class="primary-btn" onclick="managerSaveScores()">ذخیره نمره‌ها</button><div id="managerScoreMessage" class="message"></div></div>
+    </section>
+
+    <section id="academic-attendance" class="page">
+      <div class="page-title">حضور و غیاب</div>
+      <div class="page-desc">کلاس موردنظر را انتخاب کنید و وضعیت حضور همه دانش‌آموزان آن کلاس را ثبت کنید.</div>
+      <div class="panel"><div class="grid-3"><div><label>معلم / درس / کلاس</label><select id="academicAttendanceAssignment" onchange="managerAcademicClassChanged('attendance')"></select></div><div><label>پایه</label><input id="academicAttendanceGrade" disabled></div><div><label>کلاس</label><input id="academicAttendanceClass" disabled></div></div><div id="academicAttendanceMessage" class="message"></div></div>
+      <div class="panel"><div id="managerAttendanceTable"></div><button class="primary-btn" onclick="managerSaveAttendance()">ذخیره حضور و غیاب</button></div>
+    </section>
+
+    <section id="academic-periodic" class="page">
+      <div class="page-title">نمرات دوره‌ای</div>
+      <div class="page-desc">نمرات دوره‌ای را برای دانش‌آموزان کلاس انتخاب‌شده ثبت یا ویرایش کنید.</div>
+      <div class="panel"><div class="grid-3"><div><label>معلم / درس / کلاس</label><select id="academicPeriodicAssignment" onchange="managerAcademicClassChanged('periodic')"></select></div><div><label>پایه</label><input id="academicPeriodicGrade" disabled></div><div><label>کلاس</label><input id="academicPeriodicClass" disabled></div></div><div id="academicPeriodicMessage" class="message"></div></div>
+      <div class="panel"><div id="managerPeriodicTable"></div><button class="primary-btn" onclick="managerSavePeriodic()">ذخیره نمرات دوره‌ای</button></div>
+    </section>
+
+    <section id="reports" class="page">
+
+      <div class="page-title">ثبت کارنامه</div>
+
+      <div class="page-description">
+        ثبت و انتشار کارنامه توسط مدیر
+      </div>
+
+      <div class="panel">
+
+        <h3>نوع ثبت کارنامه</h3>
+
+        <div class="form-grid">
+
+          <div>
+            <label>نوع کارنامه</label>
+
+            <select id="reportType">
+
+              <option value="first_term">
+                نوبت اول
+              </option>
+
+              <option value="second_term">
+                نوبت دوم
+              </option>
+
+              <option value="monthly">
+                کارنامه ماهانه
+              </option>
+
+            </select>
+          </div>
+
+          <div>
+            <label>محدوده ثبت</label>
+
+            <select id="reportScope" onchange="updateReportScope()">
+
+              <option value="student">
+                یک دانش‌آموز
+              </option>
+
+              <option value="class">
+                یک کلاس
+              </option>
+
+              <option value="school">
+                کل مدرسه
+              </option>
+
+            </select>
+          </div>
+
+          <div id="reportStudentBox">
+
+            <label>دانش‌آموز</label>
+
+            <select id="reportStudent">
+              <option value="">انتخاب دانش‌آموز</option>
+            </select>
+
+          </div>
+
+          <div id="reportClassBox" style="display:none">
+
+            <label>کلاس</label>
+
+            <input
+              id="reportClass"
+              placeholder="مثلاً شهید الله دادی"
+            >
+
+          </div>
+
+        </div>
+
+        <button class="primary-btn" onclick="createReportCards()">
+          ثبت کارنامه
+        </button>
+
+        <div id="reportMessage" class="message"></div>
+
+      </div>
+
+    </section>
+
+
+    <!-- WEEKLY SCHEDULE -->
+    <section id="schedule" class="page">
+      <div class="page-title">مدیریت برنامه هفتگی</div>
+      <div class="page-description">برنامه هر کلاس را ثبت کنید تا در پنل‌های مجاز نمایش داده شود.</div>
+      <div class="panel">
+        <div class="form-grid">
+          <div><label>پایه</label><select id="scheduleGrade" onchange="updateScheduleClasses()"><option value="نهم">نهم</option></select></div>
+          <div><label>کلاس</label><select id="scheduleClass"></select></div>
+          <div><label>روز هفته</label><select id="scheduleDay"><option value="1">شنبه</option><option value="2">یکشنبه</option><option value="3">دوشنبه</option><option value="4">سه‌شنبه</option><option value="5">چهارشنبه</option><option value="6">پنجشنبه</option></select></div>
+          <div><label>شماره زنگ</label><select id="schedulePeriod"><option value="1">زنگ اول</option><option value="2">زنگ دوم</option><option value="3">زنگ سوم</option><option value="4">زنگ چهارم</option><option value="5">زنگ پنجم</option><option value="6">زنگ ششم</option><option value="7">زنگ هفتم</option><option value="8">زنگ هشتم</option></select></div>
+          <div><label>نام درس</label><input id="scheduleSubject" placeholder="مثلاً علوم تجربی"></div>
+          <div><label>نام دبیر</label><input id="scheduleTeacher" placeholder="نام دبیر (اختیاری)"></div>
+          <div><label>ساعت شروع</label><input id="scheduleStart" type="time" value="08:00" required></div>
+          <div><label>ساعت پایان</label><input id="scheduleEnd" type="time" value="08:45" required></div>
+        </div>
+        <button class="primary-btn" onclick="saveScheduleItem()">ثبت / ویرایش زنگ</button>
+        <div id="scheduleMessage" class="message"></div>
+        <p class="muted">اگر برای یک روز و زنگ مشخص دوباره ثبت کنید، همان ردیف ویرایش می‌شود.</p>
+      </div>
+      <div class="panel"><h3>برنامه ثبت‌شده کلاس</h3><div id="scheduleTable"></div></div>
+<div class="panel"><h3>پیش‌نمایش و ارسال به کلاس</h3><div id="slSchedPreview"></div></div>
+    </section>
+
+    <section id="chat" class="page"><div class="page-title">پیام‌ها</div><div class="page-description">گفتگو، گروه و کانال با معلم‌ها، دانش‌آموزان و والدین؛ کانال‌ها را شما می‌سازید و اعضا را انتخاب می‌کنید.</div><div id="slChatRoot"></div></section>
+<section id="notifications" class="page"><div class="page-title">اعلان‌ها</div><div class="page-description">تازه‌ترین رویدادها به‌صورت زنده.</div><div id="slNotifRoot"></div></section>
+<!-- WEEKLY CIRCULARS -->
+    <section id="circulars" class="page">
+      <div class="page-title">بخش‌نامه هفتگی</div>
+      <div class="page-description">بخش‌نامه‌ها را برای کل مدرسه، یک پایه یا یک کلاس منتشر کنید.</div>
+      <div class="panel">
+        <div class="form-grid">
+          <div><label>عنوان بخش‌نامه</label><input id="circularTitle" maxlength="160" placeholder="مثلاً برنامه امتحانات هفته آینده"></div>
+          <div><label>شروع هفته</label><input id="circularWeek" type="date"></div>
+          <div><label>محدوده انتشار</label><select id="circularScope" onchange="updateCircularTarget()"><option value="school">کل مدرسه</option><option value="grade">یک پایه</option><option value="class">یک کلاس</option></select></div>
+          <div id="circularGradeWrap" class="hidden"><label>پایه</label><select id="circularGrade" onchange="updateCircularClassOptions()"><option value="نهم">نهم</option></select></div>
+          <div id="circularClassWrap" class="hidden"><label>کلاس</label><select id="circularClass"></select></div>
+        </div>
+        <label style="margin-top:14px">متن بخش‌نامه</label>
+        <textarea id="circularBody" rows="5" maxlength="10000" placeholder="متن کامل بخش‌نامه را بنویسید..."></textarea>
+        <button class="primary-btn" onclick="publishCircular()">انتشار بخش‌نامه</button>
+        <div id="circularMessage" class="message"></div>
+      </div>
+      <div class="panel"><h3>بخش‌نامه‌های ثبت‌شده</h3><div id="circularList"></div></div>
+    </section>
+
+    <!-- PASSWORD -->
+    <section id="password" class="page">
+
+      <div class="page-title">تغییر رمز عبور</div>
+
+      <div class="page-description">
+        تغییر رمز عبور حساب مدیر
+      </div>
+
+      <div class="panel">
+
+        <div style="max-width:500px">
+
+          <label>رمز عبور جدید</label>
+          <input
+            id="newPassword"
+            type="password"
+            placeholder="حداقل ۶ کاراکتر"
+          >
+
+          <label style="margin-top:15px">
+            تکرار رمز عبور جدید
+          </label>
+
+          <input
+            id="confirmPassword"
+            type="password"
+            placeholder="تکرار رمز"
+          >
+
+          <button class="primary-btn" onclick="changePassword()">
+            تغییر رمز
+          </button>
+
+          <div id="passwordMessage" class="message"></div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+</div>
+
+
+<script>
+
+const SUPABASE_URL = "https://rwqutztruyodkdrqztfq.supabase.co";
+const SUPABASE_KEY = "sb_publishable_8gp_Xa9qG626mwMsMQ_RHA_oDKU_QBg";
+
+const supabaseClient =
+  window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+  );
+
+
+/* -------------------------
+   صفحه
+------------------------- */
+
+function showPage(pageId, button) {
+
+  document.querySelectorAll(".page")
+    .forEach(page => page.classList.remove("active"));
+
+  document.getElementById(pageId)
+    .classList.add("active");
+
+  document.querySelectorAll(".menu-btn")
+    .forEach(btn => btn.classList.remove("active"));
+
+  if (button) {
+    button.classList.add("active");
+  }
+
+  if (pageId === "dashboard") {
+    loadDashboard();
+  }
+
+  if (pageId === "teachers") {
+    loadTeachers();
+  }
+
+  if (pageId === "students") {
+    loadStudents();
+  }
+
+  if (pageId === "parents") {
+    loadParents();
+  }
+
+  if (pageId === "assignments") {
+    loadAssignments();
+  }
+
+  if (pageId === "reports") {
+    loadReportStudents();
+  }
+  if (pageId === "academic-exams" || pageId === "academic-attendance" || pageId === "academic-periodic") {
+    loadManagerAcademicData();
+  }
+  if (pageId === "schedule") {
+    updateScheduleClasses(false);
+    loadSchedule();
+  }
+  if (pageId === "circulars") {
+    updateCircularTarget();
+    loadCirculars();
+  }
+}
+
+
+/* -------------------------
+   پیام
+------------------------- */
+
+function showMessage(id, text, type = "success") {
+
+  const el = document.getElementById(id);
+
+  el.className = "message " + type;
+  el.textContent = text;
+
+}
+
+
+/* -------------------------
+   بررسی ورود
+------------------------- */
+
+async function checkManager() {
+
+  const {
+    data: {
+      session
+    }
+  } = await supabaseClient.auth.getSession();
+
+  if (!session) {
+    location.href = "index.html";
+    return;
+  }
+
+  const user = session.user;
+  currentManagerId = user.id;
+
+  const {
+    data: profile,
+    error
+  } = await supabaseClient
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .single();
+
+  if (error || !profile || profile.role !== "manager") {
+
+    await supabaseClient.auth.signOut();
+
+    location.href = "index.html";
+
+    return;
+  }
+
+  document.getElementById("managerName")
+    .textContent = profile.full_name;
+
+  loadDashboard();
+}
+
+
+/* -------------------------
+   داشبورد
+------------------------- */
+
+async function loadDashboard() {
+
+  const [
+    teachers,
+    students,
+    parents,
+    managers
+  ] = await Promise.all([
+
+    supabaseClient
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("role", "teacher"),
+
+    supabaseClient
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("role", "student"),
+
+    supabaseClient
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("role", "parent"),
+
+    supabaseClient
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("role", "manager")
+
+  ]);
+
+  document.getElementById("teacherCount")
+    .textContent = teachers.count ?? 0;
+
+  document.getElementById("studentCount")
+    .textContent = students.count ?? 0;
+
+  document.getElementById("parentCount")
+    .textContent = parents.count ?? 0;
+
+  document.getElementById("managerCount")
+    .textContent = managers.count ?? 0;
+
+  document.getElementById("systemStatus")
+    .textContent = "سیستم با موفقیت به Supabase متصل است.";
+
+}
+
+
+/* -------------------------
+   Edge Function
+------------------------- */
+
+async function callCreateUser(payload) {
+
+  const {
+    data: {
+      session
+    }
+  } = await supabaseClient.auth.getSession();
+
+  if (!session) {
+    throw new Error("نشست مدیر منقضی شده است.");
+  }
+
+  const response = await fetch(
+    SUPABASE_URL + "/functions/v1/create-school-user",
+    {
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + session.access_token,
+        "apikey": SUPABASE_KEY
+      },
+
+      body: JSON.stringify(payload)
+    }
+  );
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      result.error ||
+      result.message ||
+      "خطا در ساخت حساب"
+    );
+  }
+
+  return result;
+}
+
+
+/* -------------------------
+   معلم
+------------------------- */
+
+function addTeacherAssignment() {
+
+  const container =
+    document.getElementById("teacherAssignments");
+
+  const row =
+    document.createElement("div");
+
+  row.className = "assignment";
+
+  row.innerHTML = `
+
+    <div>
+      <label>درس</label>
+      <input class="ta-subject" placeholder="مثلاً علوم">
+    </div>
+
+    <div>
+      <label>پایه</label>
+      <select class="ta-grade"><option value="نهم">نهم</option></select>
+    </div>
+
+    <div>
+      <label>کلاس</label>
+      <select class="ta-class"><option value="">کلاس را انتخاب کنید</option><option value="شهید الله دادی">شهید الله دادی</option></select>
+    </div>
+
+    <button
+      class="danger-btn"
+      onclick="this.parentElement.remove()"
+    >
+      حذف
+    </button>
+
+  `;
+
+  container.appendChild(row);
+}
+
+
+async function createTeacher() {
+
+  const name =
+    document.getElementById("teacherName")
+      .value.trim();
+
+  if (!name) {
+    showMessage(
+      "teacherMessage",
+      "نام معلم را وارد کنید.",
+      "error"
+    );
+    return;
+  }
+
+  const rows =
+    document.querySelectorAll(
+      "#teacherAssignments .assignment"
+    );
+
+  const assignments = [];
+
+  rows.forEach(row => {
+
+    const subject =
+      row.querySelector(".ta-subject").value.trim();
+
+    const grade =
+      row.querySelector(".ta-grade").value.trim();
+
+    const className =
+      row.querySelector(".ta-class").value.trim();
+
+    if (subject && grade && className) {
+
+      assignments.push({
+        subject,
+        grade,
+        class_name: className
+      });
+
+    }
+
+  });
+
+  if (!assignments.length) {
+
+    showMessage(
+      "teacherMessage",
+      "حداقل یک درس و کلاس وارد کنید.",
+      "error"
+    );
+
+    return;
+  }
+
+  try {
+
+    const result =
+      await callCreateUser({
+
+        full_name: name,
+
+        role: "teacher",
+
+        assignments
+
+      });
+
+    showMessage(
+      "teacherMessage",
+      "معلم با موفقیت ثبت شد."
+    );
+
+    document.getElementById("teacherCredentials")
+      .style.display = "block";
+
+    document.getElementById("teacherCredentials")
+      .innerHTML = `
+
+        <div>نام کاربری:
+          <strong>${result.username}</strong>
+        </div>
+
+        <div style="margin-top:8px">
+          رمز عبور:
+          <strong>${result.password}</strong>
+        </div>
+
+      `;
+
+    document.getElementById("teacherName").value = "";
+
+    document.getElementById("teacherAssignments")
+      .innerHTML = "";
+
+    addTeacherAssignment();
+
+    loadTeachers();
+
+    loadDashboard();
+
+  } catch (error) {
+
+    showMessage(
+      "teacherMessage",
+      error.message,
+      "error"
+    );
+
+  }
+
+}
+
+
+/* -------------------------
+   لیست معلم‌ها
+------------------------- */
+
+async function loadTeachers() {
+
+  const {
+    data,
+    error
+  } = await supabaseClient
+    .from("profiles")
+    .select(`
+      id,
+      full_name,
+      username,
+      teachers(
+        subject
+      )
+    `)
+    .eq("role", "teacher")
+    .order("full_name");
+
+  const tbody =
+    document.getElementById("teachersTable");
+
+  tbody.innerHTML = "";
+
+  if (error) {
+
+    tbody.innerHTML =
+      `<tr><td colspan="5">${error.message}</td></tr>`;
+
+    return;
+  }
+
+  if (!data || !data.length) {
+
+    tbody.innerHTML =
+      `<tr><td colspan="5" class="empty">معلم ثبت نشده است.</td></tr>`;
+
+    return;
+  }
+
+  data.forEach(teacher => {
+
+    const subjects =
+      [].concat(teacher.teachers || [])
+        .map(x => x.subject)
+        .filter(Boolean)
+        .join("، ");
+
+    tbody.innerHTML += `
+
+      <tr>
+
+        <td>${escapeHtml(teacher.full_name)}</td>
+
+        <td>${escapeHtml(teacher.username)}</td>
+
+        <td>${escapeHtml(subjects || "-")}</td>
+        <td><span class="muted" title="رمزهای Supabase قابل بازیابی نیستند">قابل بازیابی نیست</span></td>
+        <td><button class="danger-btn" onclick="deleteTeacher('${teacher.id}', decodeURIComponent('${encodeURIComponent(teacher.full_name || '')}'))">حذف معلم</button></td>
+
+      </tr>
+
+    `;
+
+  });
+
+}
+
+
+/* -------------------------
+   دانش‌آموز
+------------------------- */
+
+async function createStudent() {
+
+  const name =
+    document.getElementById("studentName")
+      .value.trim();
+
+  const grade =
+    document.getElementById("studentGrade")
+      .value.trim();
+
+  const className =
+    document.getElementById("studentClass")
+      .value.trim();
+
+  if (!name || !grade || !className) {
+
+    showMessage(
+      "studentMessage",
+      "همه اطلاعات دانش‌آموز را وارد کنید.",
+      "error"
+    );
+
+    return;
+  }
+
+  try {
+
+    const result =
+      await callCreateUser({
+
+        full_name: name,
+
+        role: "student",
+
+        grade,
+
+        class_name: className
+
+      });
+
+    showMessage(
+      "studentMessage",
+      "دانش‌آموز با موفقیت ثبت شد."
+    );
+
+    document.getElementById("studentCredentials")
+      .style.display = "block";
+
+    document.getElementById("studentCredentials")
+      .innerHTML = `
+
+        <div>
+          نام کاربری:
+          <strong>${result.username}</strong>
+        </div>
+
+        <div style="margin-top:8px">
+          رمز عبور:
+          <strong>${result.password}</strong>
+        </div>
+
+      `;
+
+    document.getElementById("studentName").value = "";
+    document.getElementById("studentGrade").value = "";
+    document.getElementById("studentClass").value = "";
+
+    loadStudents();
+    loadDashboard();
+
+  } catch (error) {
+
+    showMessage(
+      "studentMessage",
+      error.message,
+      "error"
+    );
+
+  }
+
+}
+
+
+/* -------------------------
+   لیست دانش‌آموزها
+------------------------- */
+
+async function loadStudents() {
+
+  const {
+    data,
+    error
+  } = await supabaseClient
+    .from("profiles")
+    .select(`
+      id,
+      full_name,
+      username,
+      students!inner(
+        grade,
+        class_name,
+        active
+      )
+    `)
+    .eq("role", "student")
+    .eq("students.active", true)
+    .order("full_name");
+
+  const tbody =
+    document.getElementById("studentsTable");
+
+  tbody.innerHTML = "";
+
+  if (error) {
+
+    tbody.innerHTML =
+      `<tr><td colspan="6">${error.message}</td></tr>`;
+
+    return;
+  }
+
+  if (!data || !data.length) {
+
+    tbody.innerHTML =
+      `<tr><td colspan="6" class="empty">دانش‌آموزی ثبت نشده است.</td></tr>`;
+
+    return;
+  }
+
+  data.forEach(student => {
+
+    const info = Array.isArray(student.students) ? student.students[0] : student.students;
+
+    tbody.innerHTML += `
+
+      <tr>
+
+        <td>${escapeHtml(student.full_name)}</td>
+
+        <td>${escapeHtml(student.username)}</td>
+
+        <td>${escapeHtml(info?.grade || "-")}</td>
+
+        <td>${escapeHtml(info?.class_name || "-")}</td>
+        <td><span class="muted" title="رمزهای Supabase قابل بازیابی نیستند">قابل بازیابی نیست</span></td>
+
+        <td>
+          <button
+            class="danger-btn"
+            onclick="deleteStudent('${student.id}', decodeURIComponent('${encodeURIComponent(student.full_name || '')}'))"
+          >
+            حذف
+          </button>
+        </td>
+
+      </tr>
+
+    `;
+
+  });
+
+}
+
+
+/* -------------------------
+   حذف معلم
+------------------------- */
+async function deleteTeacher(profileId, teacherName) {
+  const ok = confirm(`آیا از حذف معلم «${teacherName}» مطمئن هستید؟\n\nحساب معلم و اطلاعات وابسته به پروفایل او حذف می‌شود.`);
+  if (!ok) return;
+  try {
+    const { error } = await supabaseClient.from('profiles').delete().eq('id', profileId);
+    if (error) throw error;
+    showMessage('teacherMessage', `معلم «${teacherName}» حذف شد.`);
+    await loadTeachers();
+    await loadDashboard();
+    await loadManagerAcademicData();
+  } catch (error) {
+    showMessage('teacherMessage', 'حذف معلم انجام نشد: ' + error.message, 'error');
+  }
+}
+
+/* -------------------------
+   حذف دانش‌آموز
+------------------------- */
+
+async function deleteStudent(profileId, studentName) {
+  const ok = confirm(
+    `آیا از حذف «${studentName}» مطمئن هستید؟\n\nحساب دانش‌آموز غیرفعال می‌شود و از فهرست فعال‌ها کنار می‌رود. برای حفظ نمره‌ها و کارنامه‌های قبلی، اطلاعات تاریخی از دیتابیس پاک نمی‌شوند.`
+  );
+  if (!ok) return;
+  try {
+    // حذف مستقیم profiles با خطای کلید خارجی روبه‌رو می‌شود و ممکن است سابقهٔ تحصیلی را خراب کند.
+    // غیرفعال‌سازی باعث می‌شود ورود دانش‌آموز مسدود شود و سوابق مدرسه حفظ شوند.
+    const { error } = await supabaseClient
+      .from('students')
+      .update({ active: false })
+      .eq('user_id', profileId);
+    if (error) throw error;
+
+    showMessage('studentMessage', `حساب دانش‌آموز «${studentName}» غیرفعال شد و از فهرست فعال‌ها حذف شد.`);
+    await loadStudents();
+    await loadParentStudents();
+    await loadDashboard();
+    await loadManagerAcademicData();
+  } catch (error) {
+    showMessage('studentMessage', 'حذف/غیرفعال‌سازی دانش‌آموز انجام نشد: ' + (error.message || 'خطای نامشخص'), 'error');
+  }
+}
+
+
+/* -------------------------
+   والد
+------------------------- */
+
+async function loadParentStudents() {
+
+  const {
+    data
+  } = await supabaseClient
+    .from("profiles")
+    .select(`
+      id,
+      full_name,
+      students(
+        grade,
+        class_name
+      )
+    `)
+    .eq("role", "student")
+    .order("full_name");
+
+  const select =
+    document.getElementById("parentStudent");
+
+  select.innerHTML =
+    `<option value="">انتخاب دانش‌آموز</option>`;
+
+  (data || []).forEach(student => {
+
+    select.innerHTML += `
+
+      <option value="${student.id}">
+
+        ${escapeHtml(student.full_name)}
+
+      </option>
+
+    `;
+
+  });
+
+}
+
+
+async function createParent() {
+
+  const name =
+    document.getElementById("parentName")
+      .value.trim();
+
+  const studentId =
+    document.getElementById("parentStudent")
+      .value;
+
+  if (!name || !studentId) {
+
+    showMessage(
+      "parentMessage",
+      "نام والد و دانش‌آموز را انتخاب کنید.",
+      "error"
+    );
+
+    return;
+  }
+
+  try {
+
+    const result =
+      await callCreateUser({
+
+        full_name: name,
+
+        role: "parent"
+
+      });
+
+    const {
+      error
+    } = await supabaseClient
+      .from("parent_students")
+      .insert({
+
+        parent_user_id: result.user_id,
+
+        student_id: studentId
+
+      });
+
+    if (error) {
+      throw error;
+    }
+
+    showMessage(
+      "parentMessage",
+      "والد با موفقیت ثبت شد."
+    );
+
+    document.getElementById("parentCredentials")
+      .style.display = "block";
+
+    document.getElementById("parentCredentials")
+      .innerHTML = `
+
+        <div>
+          نام کاربری:
+          <strong>${result.username}</strong>
+        </div>
+
+        <div style="margin-top:8px">
+          رمز عبور:
+          <strong>${result.password}</strong>
+        </div>
+
+      `;
+
+    document.getElementById("parentName").value = "";
+
+    loadParents();
+    loadDashboard();
+
+  } catch (error) {
+
+    showMessage(
+      "parentMessage",
+      error.message,
+      "error"
+    );
+
+  }
+
+}
+
+
+/* -------------------------
+   لیست والدین
+------------------------- */
+
+async function loadParents() {
+
+  const {
+    data,
+    error
+  } = await supabaseClient
+    .from("profiles")
+    .select(`
+      id,
+      full_name,
+      username
+    `)
+    .eq("role", "parent")
+    .order("full_name");
+
+  const tbody =
+    document.getElementById("parentsTable");
+
+  tbody.innerHTML = "";
+
+  if (error) {
+
+    tbody.innerHTML =
+      `<tr><td colspan="2">${error.message}</td></tr>`;
+
+    return;
+  }
+
+  if (!data || !data.length) {
+
+    tbody.innerHTML =
+      `<tr><td colspan="2" class="empty">والدی ثبت نشده است.</td></tr>`;
+
+    return;
+  }
+
+  data.forEach(parent => {
+
+    tbody.innerHTML += `
+
+      <tr>
+
+        <td>${escapeHtml(parent.full_name)}</td>
+
+        <td>${escapeHtml(parent.username)}</td>
+
+      </tr>
+
+    `;
+
+  });
+
+}
+
+
+/* -------------------------
+   تخصیص درس
+------------------------- */
+
+async function loadAssignmentTeachers() {
+
+  const {
+    data
+  } = await supabaseClient
+    .from("profiles")
+    .select("id, full_name")
+    .eq("role", "teacher")
+    .order("full_name");
+
+  const select =
+    document.getElementById("assignmentTeacher");
+
+  select.innerHTML =
+    `<option value="">انتخاب معلم</option>`;
+
+  (data || []).forEach(teacher => {
+
+    select.innerHTML += `
+
+      <option value="${teacher.id}">
+        ${escapeHtml(teacher.full_name)}
+      </option>
+
+    `;
+
+  });
+
+}
+
+
+async function addAssignment() {
+
+  const userId =
+    document.getElementById("assignmentTeacher")
+      .value;
+
+  const subject =
+    document.getElementById("assignmentSubject")
+      .value.trim();
+
+  const grade =
+    document.getElementById("assignmentGrade")
+      .value.trim();
+
+  const className =
+    document.getElementById("assignmentClass")
+      .value.trim();
+
+  if (!userId || !subject || !grade || !className) {
+
+    showMessage(
+      "assignmentMessage",
+      "همه اطلاعات را وارد کنید.",
+      "error"
+    );
+
+    return;
+  }
+
+  const {
+    data: teacher,
+    error: teacherError
+  } = await supabaseClient
+    .from("teachers")
+    .select("id")
+    .eq("user_id", userId)
+    .single();
+
+  if (teacherError) {
+
+    showMessage(
+      "assignmentMessage",
+      teacherError.message,
+      "error"
+    );
+
+    return;
+  }
+
+  const {
+    error
+  } = await supabaseClient
+    .from("teacher_assignments")
+    .insert({
+
+      teacher_id: teacher.id,
+
+      subject,
+
+      grade,
+
+      class_name: className
+
+    });
+
+  if (error) {
+
+    showMessage(
+      "assignmentMessage",
+      error.message,
+      "error"
+    );
+
+    return;
+  }
+
+  showMessage(
+    "assignmentMessage",
+    "تخصیص با موفقیت ثبت شد."
+  );
+
+  document.getElementById("assignmentSubject").value = "";
+  document.getElementById("assignmentGrade").value = "";
+  document.getElementById("assignmentClass").value = "";
+
+  loadAssignments();
+
+}
+
+
+async function loadAssignments() {
+
+  await loadAssignmentTeachers();
+
+  const {
+    data,
+    error
+  } = await supabaseClient
+    .from("teacher_assignments")
+    .select(`
+      subject,
+      grade,
+      class_name,
+      teachers(
+        profiles(
+          full_name
+        )
+      )
+    `);
+
+  const tbody =
+    document.getElementById("assignmentsTable");
+
+  tbody.innerHTML = "";
+
+  if (error) {
+
+    tbody.innerHTML =
+      `<tr><td colspan="4">${error.message}</td></tr>`;
+
+    return;
+  }
+
+  if (!data || !data.length) {
+
+    tbody.innerHTML =
+      `<tr><td colspan="4" class="empty">تخصیصی وجود ندارد.</td></tr>`;
+
+    return;
+  }
+
+  data.forEach(item => {
+
+    const teacher =
+      item.teachers?.profiles?.full_name || "-";
+
+    tbody.innerHTML += `
+
+      <tr>
+
+        <td>${escapeHtml(teacher)}</td>
+
+        <td>${escapeHtml(item.subject)}</td>
+
+        <td>${escapeHtml(item.grade)}</td>
+
+        <td>${escapeHtml(item.class_name)}</td>
+
+      </tr>
+
+    `;
+
+  });
+
+}
+
+
+/* -------------------------
+   کارنامه
+------------------------- */
+
+async function loadReportStudents() {
+
+  const {
+    data
+  } = await supabaseClient
+    .from("profiles")
+    .select("id, full_name")
+    .eq("role", "student")
+    .order("full_name");
+
+  const select =
+    document.getElementById("reportStudent");
+
+  select.innerHTML =
+    `<option value="">انتخاب دانش‌آموز</option>`;
+
+  (data || []).forEach(student => {
+
+    select.innerHTML += `
+
+      <option value="${student.id}">
+        ${escapeHtml(student.full_name)}
+      </option>
+
+    `;
+
+  });
+
+}
+
+
+function updateReportScope() {
+
+  const scope =
+    document.getElementById("reportScope").value;
+
+  document.getElementById("reportStudentBox")
+    .style.display =
+      scope === "student"
+        ? "block"
+        : "none";
+
+  document.getElementById("reportClassBox")
+    .style.display =
+      scope === "class"
+        ? "block"
+        : "none";
+
+}
+
+
+async function createReportCards() {
+
+  const type =
+    document.getElementById("reportType").value;
+
+  const scope =
+    document.getElementById("reportScope").value;
+
+  if (scope === "student") {
+
+    const studentUserId =
+      document.getElementById("reportStudent").value;
+
+    if (!studentUserId) {
+
+      showMessage(
+        "reportMessage",
+        "دانش‌آموز را انتخاب کنید.",
+        "error"
+      );
+
+      return;
+    }
+
+    const {
+      data: student
+    } = await supabaseClient
+      .from("students")
+      .select("id")
+      .eq("user_id", studentUserId)
+      .single();
+
+    if (!student) {
+
+      showMessage(
+        "reportMessage",
+        "اطلاعات دانش‌آموز پیدا نشد.",
+        "error"
+      );
+
+      return;
+    }
+
+    const {
+      error
+    } = await supabaseClient
+      .from("report_cards")
+      .insert({
+
+        student_id: student.id,
+
+        report_type: type,
+
+        published: false
+
+      });
+
+    if (error) {
+
+      showMessage(
+        "reportMessage",
+        error.message,
+        "error"
+      );
+
+      return;
+    }
+
+    showMessage(
+      "reportMessage",
+      "کارنامه برای دانش‌آموز ایجاد شد."
+    );
+
+    return;
+  }
+
+
+  if (scope === "class") {
+
+    const className =
+      document.getElementById("reportClass")
+        .value.trim();
+
+    if (!className) {
+
+      showMessage(
+        "reportMessage",
+        "نام کلاس را وارد کنید.",
+        "error"
+      );
+
+      return;
+    }
+
+    const {
+      data: students
+    } = await supabaseClient
+      .from("students")
+      .select("id, class_name")
+      .eq("class_name", className);
+
+    if (!students || !students.length) {
+
+      showMessage(
+        "reportMessage",
+        "دانش‌آموزی در این کلاس پیدا نشد.",
+        "error"
+      );
+
+      return;
+    }
+
+    const rows =
+      students.map(student => ({
+
+        student_id: student.id,
+
+        report_type: type,
+
+        published: false
+
+      }));
+
+    const {
+      error
+    } = await supabaseClient
+      .from("report_cards")
+      .insert(rows);
+
+    if (error) {
+
+      showMessage(
+        "reportMessage",
+        error.message,
+        "error"
+      );
+
+      return;
+    }
+
+    showMessage(
+      "reportMessage",
+      "کارنامه برای کل کلاس ایجاد شد."
+    );
+
+    return;
+  }
+
+
+  if (scope === "school") {
+
+    const {
+      data: students
+    } = await supabaseClient
+      .from("students")
+      .select("id");
+
+    if (!students || !students.length) {
+
+      showMessage(
+        "reportMessage",
+        "هیچ دانش‌آموزی وجود ندارد.",
+        "error"
+      );
+
+      return;
+    }
+
+    const rows =
+      students.map(student => ({
+
+        student_id: student.id,
+
+        report_type: type,
+
+        published: false
+
+      }));
+
+    const {
+      error
+    } = await supabaseClient
+      .from("report_cards")
+      .insert(rows);
+
+    if (error) {
+
+      showMessage(
+        "reportMessage",
+        error.message,
+        "error"
+      );
+
+      return;
+    }
+
+    showMessage(
+      "reportMessage",
+      "کارنامه برای کل مدرسه ایجاد شد."
+    );
+
+  }
+
+}
+
+
+/* -------------------------
+   تغییر رمز
+------------------------- */
+
+async function changePassword() {
+
+  const password =
+    document.getElementById("newPassword")
+      .value;
+
+  const confirm =
+    document.getElementById("confirmPassword")
+      .value;
+
+  if (password.length < 6) {
+
+    showMessage(
+      "passwordMessage",
+      "رمز عبور باید حداقل ۶ کاراکتر باشد.",
+      "error"
+    );
+
+    return;
+  }
+
+  if (password !== confirm) {
+
+    showMessage(
+      "passwordMessage",
+      "دو رمز عبور یکسان نیستند.",
+      "error"
+    );
+
+    return;
+  }
+
+  const {
+    error
+  } = await supabaseClient.auth
+    .updateUser({
+      password
+    });
+
+  if (error) {
+
+    showMessage(
+      "passwordMessage",
+      error.message,
+      "error"
+    );
+
+    return;
+  }
+
+  showMessage(
+    "passwordMessage",
+    "رمز عبور با موفقیت تغییر کرد."
+  );
+
+  document.getElementById("newPassword").value = "";
+  document.getElementById("confirmPassword").value = "";
+
+}
+
+
+/* -------------------------
+   خروج
+------------------------- */
+
+async function logout() {
+
+  const btn = document.querySelector(".logout");
+  if (btn) btn.disabled = true;
+
+  try {
+    const { error } = await supabaseClient.auth.signOut({ scope: "global" });
+    if (error) throw error;
+  } catch (error) {
+    console.error("Logout error:", error);
+  } finally {
+    location.replace("index.html");
+  }
+
+}
+
+
+/* -------------------------
+   جلوگیری از HTML Injection
+------------------------- */
+
+
+/* ===== عملیات آموزشی مدیر ===== */
+let managerAcademicAssignments=[];
+let managerAcademicStudents=[];
+let managerAcademicExams=[];
+let managerAcademicActive=null;
+async function managerNotifyAcademic(a,title,body,type){if(!a||!window.SchoolLive?.schedule?.notifyClass)return;try{await window.SchoolLive.schedule.notifyClass(supabaseClient,a.grade,a.class_name,title,body,type||'academic');}catch(e){console.warn('ثبت اعلان انجام نشد:',e);}}
+
+async function loadManagerAcademicData(){
+  const r=await supabaseClient.from('teacher_assignments').select('id,teacher_id,subject,grade,class_name,teachers!inner(id,user_id)').order('grade').order('class_name');
+  if(r.error){console.error(r.error);return;}
+  const teacherIds=[...new Set((r.data||[]).map(x=>x.teacher_id))];
+  let names={};
+  if(teacherIds.length){const tr=await supabaseClient.from('profiles').select('id,full_name').in('id',(r.data||[]).map(x=>x.teachers?.user_id).filter(Boolean));if(!tr.error)names=Object.fromEntries((tr.data||[]).map(x=>[x.id,x.full_name]));}
+  managerAcademicAssignments=(r.data||[]).map(a=>({...a,teacher_name:names[a.teachers?.user_id]||'بدون نام'}));
+  ['academicExamAssignment','academicAttendanceAssignment','academicPeriodicAssignment'].forEach(id=>{const sel=document.getElementById(id);if(!sel)return;sel.innerHTML='<option value="">انتخاب معلم و کلاس...</option>'+managerAcademicAssignments.map(a=>`<option value="${a.id}">${escapeHtml(a.teacher_name)} — ${escapeHtml(a.subject||'')} — ${escapeHtml(a.grade)} — ${escapeHtml(a.class_name)}</option>`).join('');});
+}
+function getManagerAcademicAssignment(type){const id=document.getElementById(type==='exam'?'academicExamAssignment':type==='attendance'?'academicAttendanceAssignment':'academicPeriodicAssignment')?.value;return managerAcademicAssignments.find(a=>String(a.id)===String(id))||null;}
+async function managerAcademicClassChanged(type){const a=getManagerAcademicAssignment(type);managerAcademicActive=a;const p=type==='exam'?'academicExam':type==='attendance'?'academicAttendance':'academicPeriodic';document.getElementById(p+'Grade').value=a?.grade||'';document.getElementById(p+'Class').value=a?.class_name||'';if(!a)return;await managerLoadAcademicStudents(a);if(type==='exam')await managerLoadExams();if(type==='attendance')managerRenderAttendance();if(type==='periodic')await managerRenderPeriodic();}
+async function managerLoadAcademicStudents(a){const r=await supabaseClient.from('profiles').select('id,full_name,username,students!inner(id,grade,class_name)').eq('role','student').eq('students.grade',a.grade).eq('students.class_name',a.class_name).order('full_name');if(r.error){managerAcademicStudents=[];console.error(r.error);return;}managerAcademicStudents=(r.data||[]).map(x=>({profile_id:x.id,name:x.full_name,username:x.username,student:Array.isArray(x.students)?x.students[0]:x.students}));}
+async function managerCreateExam(){
+  const a=getManagerAcademicAssignment('exam');
+  if(!a)return showMessage('academicExamMessage','ابتدا معلم و کلاس را انتخاب کنید.','error');
+  const title=document.getElementById('managerExamTitle').value.trim();
+  if(!title)return showMessage('academicExamMessage','عنوان امتحان را وارد کنید.','error');
+  const payload={teacher_id:a.teacher_id,subject:a.subject,grade:a.grade,class_name:a.class_name,title,exam_date:document.getElementById('managerExamDate').value||null,max_score:Number(document.getElementById('managerExamMax').value||20)};
+  const r=await supabaseClient.from('exams').insert(payload).select().single();
+  if(r.error)return showMessage('academicExamMessage',r.error.message,'error');
+  document.getElementById('managerExamTitle').value='';
+  showMessage('academicExamMessage','امتحان ایجاد شد.');
+  await managerNotifyAcademic(a,'امتحان جدید: '+title,`برای کلاس ${a.grade} ${a.class_name} امتحان «${title}» ثبت شد.`,'exam');
+  await managerLoadExams();
+  await managerOpenScores(r.data.id);
+}
+async function managerLoadExams(){
+  const box=document.getElementById('managerExamList');
+  if(!box)return;
+  const a=getManagerAcademicAssignment('exam');
+  if(!a){box.innerHTML='<div class="muted">ابتدا یک کلاس را انتخاب کنید.</div>';return;}
+  const r=await supabaseClient.from('exams').select('*').eq('teacher_id',a.teacher_id).eq('subject',a.subject).eq('grade',a.grade).eq('class_name',a.class_name).order('exam_date',{ascending:false});
+  if(r.error){box.innerHTML=escapeHtml(r.error.message);return;}
+  managerAcademicExams=r.data||[];
+  box.innerHTML=managerAcademicExams.length?`<table><thead><tr><th>عنوان</th><th>تاریخ</th><th>حداکثر نمره</th><th>عملیات</th></tr></thead><tbody>${managerAcademicExams.map(e=>`<tr><td>${escapeHtml(e.title)}</td><td>${escapeHtml(e.exam_date||'-')}</td><td>${escapeHtml(e.max_score)}</td><td><button class="secondary-btn" onclick="managerOpenScores('${e.id}')">ثبت / ویرایش نمره</button></td></tr>`).join('')}</tbody></table>`:'<div class="muted">امتحانی برای این کلاس ثبت نشده است.</div>';
+}
+async function managerOpenScores(id){
+  const e=managerAcademicExams.find(x=>String(x.id)===String(id))||((await supabaseClient.from('exams').select('*').eq('id',id).single()).data);
+  if(!e)return;
+  const sr=await supabaseClient.from('exam_scores').select('student_id,score').eq('exam_id',e.id);
+  if(sr.error)return showMessage('academicExamMessage',sr.error.message,'error');
+  const map=new Map((sr.data||[]).map(x=>[String(x.student_id),x.score]));
+  document.getElementById('managerScorePanel').classList.remove('hidden');
+  document.getElementById('managerScoreTitle').textContent=e.title+' — نمره از '+e.max_score;
+  document.getElementById('managerScoreTable').innerHTML=`<table><thead><tr><th>دانش‌آموز</th><th>نام کاربری</th><th>نمره</th></tr></thead><tbody>${managerAcademicStudents.map(s=>`<tr><td>${escapeHtml(s.name)}</td><td>${escapeHtml(s.username)}</td><td><input class="manager-score-input" data-student="${s.student.id}" type="number" min="0" max="${e.max_score}" step="0.01" value="${map.get(String(s.student.id))??''}"></td></tr>`).join('')}</tbody></table>`;
+  document.getElementById('managerScorePanel').dataset.exam=e.id;
+}
+async function managerSaveScores(){
+  const examId=document.getElementById('managerScorePanel').dataset.exam;
+  if(!examId)return;
+  const rows=[...document.querySelectorAll('.manager-score-input')].filter(x=>x.value!=='').map(x=>({exam_id:examId,student_id:Number(x.dataset.student),score:Number(x.value)}));
+  if(!rows.length)return showMessage('managerScoreMessage','حداقل یک نمره وارد کنید.','error');
+  for(const row of rows){
+    const existing=await supabaseClient.from('exam_scores').select('id').eq('exam_id',row.exam_id).eq('student_id',row.student_id).maybeSingle();
+    if(existing.error)return showMessage('managerScoreMessage',existing.error.message,'error');
+    const r=existing.data?await supabaseClient.from('exam_scores').update({score:row.score}).eq('id',existing.data.id):await supabaseClient.from('exam_scores').insert(row);
+    if(r.error)return showMessage('managerScoreMessage',r.error.message,'error');
+  }
+  showMessage('managerScoreMessage','نمره‌ها با موفقیت ذخیره شدند.');
+  const a=getManagerAcademicAssignment('exam'); if(a) await managerNotifyAcademic(a,'ثبت یا ویرایش نمره‌ها','نمره‌های امتحان برای کلاس '+a.grade+' '+a.class_name+' ثبت یا ویرایش شد.','grade');
+}
+function managerRenderAttendance(){
+  const box=document.getElementById('managerAttendanceTable');
+  if(!box)return;
+  if(!managerAcademicActive){box.innerHTML='<div class="muted">ابتدا یک کلاس را انتخاب کنید.</div>';return;}
+  box.innerHTML=`<div style="max-width:250px;margin-bottom:15px"><label>تاریخ</label><input id="managerAttendanceDate" type="date" value="${new Date().toISOString().slice(0,10)}"></div><table><thead><tr><th>دانش‌آموز</th><th>نام کاربری</th><th>وضعیت</th></tr></thead><tbody>${managerAcademicStudents.map(s=>`<tr><td>${escapeHtml(s.name)}</td><td>${escapeHtml(s.username)}</td><td><select class="manager-att-status" data-student="${s.student.id}"><option value="حاضر">حاضر</option><option value="غایب">غایب</option><option value="موجه">موجه</option><option value="تاخیر">تأخیر</option></select></td></tr>`).join('')}</tbody></table>`;
+}
+async function managerSaveAttendance(){
+  const a=getManagerAcademicAssignment('attendance');
+  if(!a)return showMessage('academicAttendanceMessage','ابتدا کلاس را انتخاب کنید.','error');
+  const date=document.getElementById('managerAttendanceDate')?.value;
+  if(!date)return showMessage('academicAttendanceMessage','تاریخ را انتخاب کنید.','error');
+  const rows=[...document.querySelectorAll('.manager-att-status')].map(x=>({student_id:Number(x.dataset.student),teacher_id:a.teacher_id,attendance_date:date,status:x.value}));
+  const del=await supabaseClient.from('attendance').delete().eq('teacher_id',a.teacher_id).eq('attendance_date',date).in('student_id',rows.map(x=>x.student_id));
+  if(del.error)return showMessage('academicAttendanceMessage',del.error.message,'error');
+  const r=await supabaseClient.from('attendance').insert(rows);
+  if(r.error)return showMessage('academicAttendanceMessage',r.error.message,'error');
+  showMessage('academicAttendanceMessage','حضور و غیاب ذخیره شد.');
+  await managerNotifyAcademic(a,'ثبت حضور و غیاب','حضور و غیاب کلاس '+a.grade+' '+a.class_name+' برای تاریخ '+date+' ثبت شد.','attendance');
+}
+async function managerRenderPeriodic(){
+  const box=document.getElementById('managerPeriodicTable');
+  if(!box)return;
+  const a=getManagerAcademicAssignment('periodic');
+  if(!a){box.innerHTML='<div class="muted">ابتدا یک کلاس را انتخاب کنید.</div>';return;}
+  const r=await supabaseClient.from('periodic_grades').select('student_id,grade').eq('teacher_id',a.teacher_id).eq('subject',a.subject||'').eq('term','دوره‌ای');
+  if(r.error)return showMessage('academicPeriodicMessage',r.error.message,'error');
+  const map=new Map((r.data||[]).map(x=>[String(x.student_id),x.grade]));
+  box.innerHTML=`<table><thead><tr><th>دانش‌آموز</th><th>نام کاربری</th><th>نمره دوره‌ای</th></tr></thead><tbody>${managerAcademicStudents.map(s=>`<tr><td>${escapeHtml(s.name)}</td><td>${escapeHtml(s.username)}</td><td><input class="manager-periodic-input" data-student="${s.student.id}" type="number" min="0" max="20" step="0.01" value="${map.get(String(s.student.id))??''}"></td></tr>`).join('')}</tbody></table>`;
+}
+async function managerSavePeriodic(){
+  const a=getManagerAcademicAssignment('periodic');
+  if(!a)return showMessage('academicPeriodicMessage','ابتدا کلاس را انتخاب کنید.','error');
+  const rows=[...document.querySelectorAll('.manager-periodic-input')].filter(x=>x.value!=='').map(x=>({student_id:Number(x.dataset.student),teacher_id:a.teacher_id,subject:a.subject||'',term:'دوره‌ای',grade:Number(x.value)}));
+  if(!rows.length)return showMessage('academicPeriodicMessage','حداقل یک نمره وارد کنید.','error');
+  for(const row of rows){
+    const existing=await supabaseClient.from('periodic_grades').select('id').eq('student_id',row.student_id).eq('teacher_id',row.teacher_id).eq('subject',row.subject).eq('term',row.term).maybeSingle();
+    if(existing.error)return showMessage('academicPeriodicMessage',existing.error.message,'error');
+    const r=existing.data?await supabaseClient.from('periodic_grades').update({grade:row.grade}).eq('id',existing.data.id):await supabaseClient.from('periodic_grades').insert(row);
+    if(r.error)return showMessage('academicPeriodicMessage',r.error.message,'error');
+  }
+  showMessage('academicPeriodicMessage','نمرات دوره‌ای ذخیره شدند.');
+  await managerNotifyAcademic(a,'ثبت نمره‌های دوره‌ای','نمره‌های دوره‌ای کلاس '+a.grade+' '+a.class_name+' ثبت یا ویرایش شد.','grade');
+}
+
+function escapeHtml(value) {
+
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+
+}
+
+
+/* -------------------------
+   شروع
+------------------------- */
+
+document.addEventListener(
+  "DOMContentLoaded",
+  async () => {
+
+    addTeacherAssignment();
+
+    await checkManager();
+
+    await loadParentStudents();
+
+  }
+);
+
+
+/* قابلیت‌های تکمیلی: برنامه هفتگی و بخش‌نامه‌ها */
+let currentManagerId = null;
+const schoolDays = {1:'شنبه',2:'یکشنبه',3:'دوشنبه',4:'سه‌شنبه',5:'چهارشنبه',6:'پنجشنبه'};
+const schoolClasses = {'نهم':['شهید الله دادی']};
+function fillClassSelect(id, grade){const el=document.getElementById(id);if(!el)return;const arr=schoolClasses[grade]||[];const old=el.value;el.innerHTML=arr.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');if(arr.includes(old))el.value=old;}
+function updateScheduleClasses(shouldLoad=true){fillClassSelect('scheduleClass',document.getElementById('scheduleGrade')?.value||'نهم');if(shouldLoad)loadSchedule();}
+function updateCircularClassOptions(){fillClassSelect('circularClass',document.getElementById('circularGrade')?.value||'نهم');}
+function updateCircularTarget(){const scope=document.getElementById('circularScope')?.value||'school';document.getElementById('circularGradeWrap')?.classList.toggle('hidden',scope==='school');document.getElementById('circularClassWrap')?.classList.toggle('hidden',scope!=='class');updateCircularClassOptions();}
+function scheduleMessage(t,err=false){showMessage('scheduleMessage',t,err?'error':'success');}
+async function loadSchedule(){const box=document.getElementById('scheduleTable');if(!box)return;const grade=document.getElementById('scheduleGrade')?.value||'نهم';const cls=document.getElementById('scheduleClass')?.value||'';if(!cls){box.innerHTML='<p class="muted">ابتدا کلاس را انتخاب کنید.</p>';return;}const r=await supabaseClient.from('school_timetable').select('*').eq('grade',grade).eq('class_name',cls).order('day_number').order('period');if(r.error){box.innerHTML='<p class="muted">برای فعال‌شدن برنامه هفتگی، فایل SQL همراه پروژه را در SQL Editor سوپابیس اجرا کنید.<br>'+escapeHtml(r.error.message)+'</p>';return;}const rows=r.data||[];box.innerHTML=rows.length?`<table><thead><tr><th>روز</th><th>زنگ</th><th>زمان</th><th>درس</th><th>دبیر</th><th>حذف</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${schoolDays[x.day_number]||'—'}</td><td>${escapeHtml(x.period)}</td><td>${escapeHtml(String(x.start_time||'').slice(0,5))} تا ${escapeHtml(String(x.end_time||'').slice(0,5))}</td><td>${escapeHtml(x.subject)}</td><td>${escapeHtml(x.teacher_name||'—')}</td><td><button class="danger-btn" onclick="deleteScheduleItem('${x.id}')">حذف</button></td></tr>`).join('')}</tbody></table>`:'<p class="muted">برای این کلاس هنوز برنامه‌ای ثبت نشده است.</p>';}
+async function saveScheduleItem(){const grade=document.getElementById('scheduleGrade').value,cls=document.getElementById('scheduleClass').value,day=Number(document.getElementById('scheduleDay').value),period=Number(document.getElementById('schedulePeriod').value),subject=document.getElementById('scheduleSubject').value.trim(),teacher=document.getElementById('scheduleTeacher').value.trim(),start=document.getElementById('scheduleStart').value,end=document.getElementById('scheduleEnd').value;if(!grade||!cls||!subject||!start||!end)return scheduleMessage('پایه، کلاس، درس و ساعت شروع و پایان را تکمیل کنید.',true);if(start>=end)return scheduleMessage('ساعت پایان باید بعد از ساعت شروع باشد.',true);const row={grade,class_name:cls,day_number:day,period,subject,teacher_name:teacher||null,start_time:start,end_time:end,updated_by:currentManagerId,updated_at:new Date().toISOString()};const r=await supabaseClient.from('school_timetable').upsert(row,{onConflict:'grade,class_name,day_number,period'});if(r.error)return scheduleMessage('ثبت برنامه انجام نشد: '+r.error.message,true);document.getElementById('scheduleSubject').value='';document.getElementById('scheduleTeacher').value='';scheduleMessage('برنامه هفتگی ذخیره شد.');await loadSchedule();}
+async function deleteScheduleItem(id){if(!confirm('این زنگ از برنامه هفتگی حذف شود؟'))return;const r=await supabaseClient.from('school_timetable').delete().eq('id',id);if(r.error)return scheduleMessage('حذف انجام نشد: '+r.error.message,true);scheduleMessage('زنگ حذف شد.');await loadSchedule();}
+function circularTargetLabel(x){if(x.target_scope==='school')return 'کل مدرسه';if(x.target_scope==='grade')return 'پایه '+(x.grade||'—');return (x.grade||'')+' — '+(x.class_name||'');}
+async function loadCirculars(){const box=document.getElementById('circularList');if(!box)return;const r=await supabaseClient.from('school_circulars').select('*').order('created_at',{ascending:false}).limit(60);if(r.error){box.innerHTML='<p class="muted">برای انتشار بخش‌نامه، فایل SQL همراه پروژه را در Supabase اجرا کنید.<br>'+escapeHtml(r.error.message)+'</p>';return;}const rows=r.data||[];box.innerHTML=rows.length?rows.map(x=>`<article class="circular-item"><strong>${escapeHtml(x.title)}</strong><div style="white-space:pre-wrap;line-height:1.9;margin-top:8px">${escapeHtml(x.body)}</div><div class="circular-meta">مخاطب: ${escapeHtml(circularTargetLabel(x))} · هفته: ${escapeHtml(x.week_start||'—')} · وضعیت: ${x.is_published?'منتشر شده':'پیش‌نویس'}</div><button class="danger-btn" style="margin-top:9px" onclick="deleteCircular('${x.id}')">حذف بخش‌نامه</button></article>`).join(''):'<p class="muted">هنوز بخش‌نامه‌ای ثبت نشده است.</p>';}
+async function publishCircular(){const title=document.getElementById('circularTitle').value.trim(),body=document.getElementById('circularBody').value.trim(),week=document.getElementById('circularWeek').value,scope=document.getElementById('circularScope').value,grade=document.getElementById('circularGrade').value,cls=document.getElementById('circularClass').value;if(!title||!body||!week)return showMessage('circularMessage','عنوان، متن و شروع هفته را وارد کنید.','error');if(scope==='grade'&&!grade)return showMessage('circularMessage','پایه را انتخاب کنید.','error');if(scope==='class'&&(!grade||!cls))return showMessage('circularMessage','پایه و کلاس را انتخاب کنید.','error');const row={title,body,week_start:week,target_scope:scope,grade:scope==='school'?null:grade,class_name:scope==='class'?cls:null,is_published:true,created_by:currentManagerId,published_at:new Date().toISOString()};const r=await supabaseClient.from('school_circulars').insert(row);if(r.error)return showMessage('circularMessage','انتشار انجام نشد: '+r.error.message,'error');document.getElementById('circularTitle').value='';document.getElementById('circularBody').value='';showMessage('circularMessage','بخش‌نامه منتشر شد و برای مخاطبان انتخاب‌شده قابل مشاهده است.');await loadCirculars();}
+async function deleteCircular(id){if(!confirm('این بخش‌نامه حذف شود؟'))return;const r=await supabaseClient.from('school_circulars').delete().eq('id',id);if(r.error)return showMessage('circularMessage','حذف انجام نشد: '+r.error.message,'error');showMessage('circularMessage','بخش‌نامه حذف شد.');await loadCirculars();}
+
+
+</script>
+
+<script src="school-live.js"></script>
+<script>
+(function(){ if(!window.SchoolLive) return;
+  function go(t){ var map={chat:'chat',channel:'chat',notifications:'notifications',circular:'circulars',schedule:'schedule'}; var id=map[t]||'notifications'; var b=document.querySelector('.menu-btn[onclick*="\''+id+'\'"]'); if(typeof showPage==='function') showPage(id,b); }
+  SchoolLive.init({db:supabaseClient,navigate:go});
+  SchoolLive.mountChat(document.getElementById('slChatRoot'));
+  SchoolLive.mountNotifications(document.getElementById('slNotifRoot'));
+  SchoolFx.hero(document.getElementById('dashboard'));
+  var prev=SchoolSchedule.mountManager(document.getElementById('slSchedPreview'),{gradeId:'scheduleGrade',classId:'scheduleClass'});
+  var ls=window.loadSchedule; if(typeof ls==='function'){ window.loadSchedule=async function(){ var r=await ls.apply(this,arguments); var el=document.getElementById('slSchedPreview'); if(el&&el._reload) el._reload(); return r; }; }
+})();
+</script>
+</body>
+</html>
